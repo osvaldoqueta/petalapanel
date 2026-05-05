@@ -81,7 +81,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             await supabase.auth.signOut()
             setSession(null)
             setProfile(null)
-            toast.error('Acesso negado: Conta sem privilégios administrativos.')
+            toast.error(`Acesso negado. Sua role no banco é: "${p?.role || 'Vazia/Nula'}"`)
           }
         } else {
           setProfile(null)
