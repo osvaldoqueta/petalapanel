@@ -46,7 +46,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         user_id,
         full_name,
         avatar_url,
-        roles!profiles_role_id_fkey(name),
+        roles(name),
         created_at,
         updated_at
       `)
