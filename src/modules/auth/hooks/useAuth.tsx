@@ -58,8 +58,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return null
     }
 
-    // roles can be an array or an object depending on the relationship
-    const roleName = Array.isArray(data.roles) ? data.roles[0]?.name : data.roles?.name
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const rolesData = (data as any).roles
+    const roleName = Array.isArray(rolesData) ? rolesData[0]?.name : rolesData?.name
 
     return {
       id: data.user_id,

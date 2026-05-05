@@ -30,18 +30,19 @@
 
 ## 🔒 RBAC (Role-Based Access Control)
 
-### Hierarquia de Papéis
-| Role        | Nível | Acesso                                     |
-|-------------|-------|---------------------------------------------|
-| SuperAdmin  | 3     | Design System, BI, Merchant, Moderação, tudo |
-| Admin       | 2     | BI, Merchant, Moderação                      |
-| Lojista     | 1     | Merchant Hub (área do parceiro)              |
+### Hierarquia de Papéis (DB Real: public.roles)
+| Role             | Nível | Acesso                                     |
+|------------------|-------|---------------------------------------------|
+| Super User       | 4     | Design System, BI, Merchant, Moderação, tudo |
+| Regional Manager | 3     | BI, Merchant, Moderação                      |
+| Support          | 2     | BI, Merchant, Moderação                      |
+| Seller           | 1     | Merchant Hub (área do parceiro)              |
 
 ### Implementação
-- **`useAuth.tsx`** — AuthProvider + hook com `hasRole(minRole)` e hierarquia numérica
-- **`ProtectedRoute.tsx`** — HOC que verifica autenticação + role mínima
-- **Login** — Rejeita usuários sem role admin na tabela `profiles`
-- **RLS Policy** — `app_config` só pode ser modificada por `role = 'SuperAdmin'`
+- **`useAuth.tsx`** — Hook que realiza JOIN entre `public.profiles` (via `user_id`) e `public.roles` para capturar as permissões reais em tempo real. Inclui `hasRole(minRole)` numérico.
+- **`ProtectedRoute.tsx`** — HOC que verifica autenticação + role mínima exigida.
+- **Login Social (Google)** — Suporte a login via Google. Contas sem roles válidas na tabela `profiles` são bloqueadas imediatamente e desconectadas.
+- **RLS Policy** — As tabelas protegidas (`app_config`, `app_logs`) devem exigir `role = 'Super User'` para manipulação via dashboard.
 
 ---
 
@@ -166,8 +167,8 @@ petalapanel/
 - [x] **Scaffolding:** Projeto React 18 + Vite + Tailwind CSS v3 com TypeScript, path aliases (@/), e chunking otimizado.
 - [x] **Supabase Dual Client:** `client.ts` (anon key, RLS) + `admin.ts` (service role key, bypass RLS).
 - [x] **Shared Types:** `types.ts` com interfaces sincronizadas do petalapp.
-- [x] **RBAC Completo:** AuthProvider com hierarquia SuperAdmin > Admin > Lojista, ProtectedRoute com role mínima.
-- [x] **Login Premium:** Tela dark com glassmorphism, gradiente emerald, eye-toggle para senha.
+- [x] **RBAC Completo:** AuthProvider com hierarquia `Super User` > `Regional Manager` > `Support` > `Seller`. Busca feita via JOIN nativo no Supabase entre `profiles` e `roles`.
+- [x] **Login Premium:** Tela dark com glassmorphism, gradiente emerald, eye-toggle para senha, e **Autenticação via Google**.
 - [x] **Sidebar Colapsável:** Navegação filtrada por role, mobile drawer, avatar + role badge.
 - [x] **Dashboard BI:** 4 KPI cards (Receita, Pedidos, Ticket Médio, Video Views) + SalesChart + VideoEngagementChart.
 - [x] **Design System Control:** Tabela `app_config` editável com detecção de tipo, color picker, toggle, audit logging.
@@ -211,5 +212,15 @@ petalapanel/
 - `CONTEXT.md` — Este arquivo
 
 ---
+
+### 🔑 Insight: Autenticação e Estrutura de Banco (Sessão 2026-05-05)
+
+Durante os testes de produção, descobrimos que a estrutura do Petala App diferia do Scaffold inicial do Painel Administrativo. Registrando os detalhes críticos:
+1. **O ID de Auth:** Na tabela `profiles`, a chave estrangeira de autenticação chama-se `user_id` e não `id`.
+2. **Tabela de Roles Externa:** A tabela `profiles` não armazena a role diretamente como string, mas sim um UUID `role_id` que faz referência à tabela separada `public.roles`.
+3. **Nomenclatura Específica:** As roles estão nomeadas em inglês (`Super User`, `Regional Manager`, `Support`, `Seller`). 
+4. **Resolução:** O hook `useAuth.tsx` foi reconstruído para realizar o fetch da seguinte forma:
+   `.select('id, user_id, full_name, avatar_url, roles!profiles_role_id_fkey(name)')`.
+   Desta forma, mesmo logando via OAuth (Google), o Painel cruza corretamente o ID do Auth com o Perfil e recupera a role como texto em tempo real, mantendo total Case-Insensitivity.
 
 *Atualizar este arquivo após cada sprint com novas decisões e alterações.*

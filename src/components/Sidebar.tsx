@@ -4,6 +4,7 @@
  */
 import { NavLink, useLocation } from 'react-router-dom'
 import { useAuth } from '@/modules/auth/hooks/useAuth'
+import type { UserRole } from '@/shared/types'
 import { cn } from '@/lib/utils'
 import {
   LayoutDashboard,
@@ -22,7 +23,7 @@ interface NavItem {
   label: string
   path: string
   icon: React.ReactNode
-  minRole?: 'SuperAdmin' | 'Admin' | 'Lojista'
+  minRole?: UserRole
 }
 
 const NAV_ITEMS: NavItem[] = [
@@ -30,31 +31,31 @@ const NAV_ITEMS: NavItem[] = [
     label: 'Dashboard BI',
     path: '/',
     icon: <LayoutDashboard className="h-5 w-5" />,
-    minRole: 'Admin',
+    minRole: 'Support',
   },
   {
     label: 'Design System',
     path: '/design-system',
     icon: <Palette className="h-5 w-5" />,
-    minRole: 'SuperAdmin',
+    minRole: 'Super User',
   },
   {
     label: 'Vendas & Métricas',
     path: '/bi',
     icon: <BarChart3 className="h-5 w-5" />,
-    minRole: 'Admin',
+    minRole: 'Support',
   },
   {
     label: 'Merchant Hub',
     path: '/merchant',
     icon: <Store className="h-5 w-5" />,
-    minRole: 'Lojista',
+    minRole: 'Seller',
   },
   {
     label: 'Moderação',
     path: '/moderation',
     icon: <Shield className="h-5 w-5" />,
-    minRole: 'Admin',
+    minRole: 'Support',
   },
 ]
 
