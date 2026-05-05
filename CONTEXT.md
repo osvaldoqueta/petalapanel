@@ -223,4 +223,15 @@ Durante os testes de produção, descobrimos que a estrutura do Petala App difer
    `.select('id, user_id, full_name, avatar_url, roles!profiles_role_id_fkey(name)')`.
    Desta forma, mesmo logando via OAuth (Google), o Painel cruza corretamente o ID do Auth com o Perfil e recupera a role como texto em tempo real, mantendo total Case-Insensitivity.
 
+### 🌟 Sprint 2.0 — Central de Comando Operacional (2026-05-05)
+
+**Objetivo:** Evoluir o painel visual para uma central operacional com controle de design system (temas sazonais e feature flags), hub de lojistas com isolamento multi-tenant, e dashboard de BI com filtros granulares e exportação de dados (LGPD).
+
+- [x] **Design System Control:** Tela de gerenciamento dinâmico consumindo `app_themes` (cores, botões) e `app_config` (feature flags: flash sales, maintenance mode). App principal escuta as atualizações via Realtime Supabase (0 deploy overhead).
+- [x] **Merchant Hub Multi-tenant:** Implementação de `useStoreContext` e visão filtrada rigorosamente isolando tabelas de BI (`orders`, `ad_campaigns`, `store_inventory`) por `stores.owner_id = auth.uid()`. Admins preservam a visualização não filtrada global.
+- [x] **Advanced BI:** Barra de filtros Omni (Period, Categoria, Região). O gráfico de vendas (`SalesChart.tsx`) agora inclui uma série tracejada para **comparação de período anterior** calculada no cliente com performance `O(n)`.
+- [x] **Exportação CSV/JSON LGPD:** Hook modular de exportação de dados higienizados para o navegador (sem vazar PII), convertendo o payload REST da Supabase em relatórios corporativos.
+- [x] **Np1 Compliance (CLS Zero):** Refinamento no `Skeleton.tsx` para assegurar que as tabelas de Moderação e os Cards Temáticos pré-renderizem áreas estritas no DOM antes do network return.
+
 *Atualizar este arquivo após cada sprint com novas decisões e alterações.*
+

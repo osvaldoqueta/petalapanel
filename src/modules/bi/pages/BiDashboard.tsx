@@ -1,38 +1,59 @@
 /**
  * BiDashboard — Dashboard principal de Business Intelligence (Power BI style).
  * Exibe KPIs de vendas, pedidos e engajamento de vídeo.
+ * Agora com filtros Omni e exportação de relatórios.
  */
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/integrations/supabase/client'
 import { MetricCard } from '@/modules/bi/components/MetricCard'
 import { SalesChart } from '@/modules/bi/components/SalesChart'
 import { VideoEngagementChart } from '@/modules/bi/components/VideoEngagementChart'
+import { BiFilters } from '@/modules/bi/components/BiFilters'
 import { formatCurrency, formatCompact } from '@/lib/utils'
 import { DollarSign, ShoppingCart, TrendingUp, Video } from 'lucide-react'
+import { useExportData } from '@/hooks/useExportData'
+import type { BiFilterState } from '@/shared/types'
+import { toast } from 'sonner'
 
 export default function BiDashboard() {
+  const [filters, setFilters] = useState<BiFilterState>({
+    period: '30d',
+    startDate: null,
+    endDate: null,
+    category: null,
+    region: null,
+  })
+
+  const { exportData } = useExportData()
+
   // Aggregate metrics
   const { data: metrics, isLoading } = useQuery({
-    queryKey: ['bi-kpi-metrics'],
+    queryKey: ['bi-kpi-metrics', filters],
     queryFn: async () => {
       const now = new Date()
-      const thirtyDaysAgo = new Date(now)
-      thirtyDaysAgo.setDate(now.getDate() - 30)
-      const sixtyDaysAgo = new Date(now)
-      sixtyDaysAgo.setDate(now.getDate() - 60)
+      let days = 30
+      if (filters.period === 'today') days = 1
+      else if (filters.period === '7d') days = 7
+      
+      const currentStart = new Date(now)
+      currentStart.setDate(now.getDate() - days)
+      
+      const previousStart = new Date(currentStart)
+      previousStart.setDate(currentStart.getDate() - days)
 
-      // Current period
+      // Fetch current period
       const { data: currentOrders } = await supabase
         .from('orders')
         .select('total_amount')
-        .gte('created_at', thirtyDaysAgo.toISOString())
+        .gte('created_at', currentStart.toISOString())
 
       // Previous period for comparison
       const { data: previousOrders } = await supabase
         .from('orders')
         .select('total_amount')
-        .gte('created_at', sixtyDaysAgo.toISOString())
-        .lt('created_at', thirtyDaysAgo.toISOString())
+        .gte('created_at', previousStart.toISOString())
+        .lt('created_at', currentStart.toISOString())
 
       const currentRevenue = (currentOrders || []).reduce(
         (sum, o) => sum + (Number(o.total_amount) || 0), 0
@@ -80,11 +101,38 @@ export default function BiDashboard() {
       }
     },
     staleTime: 10 * 60 * 1000,
-    gcTime: 30 * 60 * 1000,
   })
 
+  const handleExport = async () => {
+    try {
+      toast.loading('Gerando exportação de vendas...', { id: 'export' })
+      const { data, error } = await supabase
+        .from('orders')
+        .select('id, total_amount, status, created_at, stores(name, location)')
+        .order('created_at', { ascending: false })
+        .limit(100)
+
+      if (error) throw error
+      
+      const cleanData = data.map(d => ({
+        Pedido_ID: d.id,
+        Valor: Number(d.total_amount).toFixed(2),
+        Status: d.status,
+        Data: new Date(d.created_at).toLocaleDateString('pt-BR'),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        Loja: (d.stores as any)?.name || 'Desconhecida'
+      }))
+
+      exportData(cleanData, 'relatorio_vendas_petala', 'csv')
+      toast.success('Exportação concluída!', { id: 'export' })
+    } catch (e) {
+      console.error(e)
+      toast.error('Erro ao exportar dados.', { id: 'export' })
+    }
+  }
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fade-in">
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-white tracking-tight">Dashboard BI</h1>
@@ -93,10 +141,17 @@ export default function BiDashboard() {
         </p>
       </div>
 
+      {/* Filtros Omni */}
+      <BiFilters 
+        filters={filters} 
+        onChange={setFilters} 
+        onExport={handleExport}
+      />
+
       {/* KPI Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <MetricCard
-          title="Receita (30d)"
+          title={`Receita (${filters.period})`}
           value={formatCurrency(metrics?.revenue ?? 0)}
           change={metrics?.revenueChange}
           icon={<DollarSign className="h-5 w-5" />}
@@ -104,7 +159,7 @@ export default function BiDashboard() {
           accentColor="text-emerald-400"
         />
         <MetricCard
-          title="Pedidos (30d)"
+          title={`Pedidos (${filters.period})`}
           value={String(metrics?.orderCount ?? 0)}
           change={metrics?.countChange}
           icon={<ShoppingCart className="h-5 w-5" />}
@@ -130,8 +185,8 @@ export default function BiDashboard() {
 
       {/* Charts Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <SalesChart />
-        <VideoEngagementChart />
+        <SalesChart filters={filters} />
+        <VideoEngagementChart filters={filters} />
       </div>
     </div>
   )

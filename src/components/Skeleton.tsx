@@ -79,3 +79,46 @@ export function TableSkeleton({ rows = 5, cols = 5 }: { rows?: number; cols?: nu
     </div>
   )
 }
+
+/** Skeleton para barra de filtros do BI */
+export function BiFiltersSkeleton() {
+  return (
+    <div className="glass rounded-xl p-2 mb-6 flex flex-col md:flex-row items-center justify-between gap-4">
+      <div className="flex flex-wrap items-center gap-2">
+        <Skeleton className="h-9 w-40 rounded-lg" />
+        <Skeleton className="h-9 w-32 rounded-lg" />
+        <Skeleton className="h-9 w-48 rounded-lg" />
+      </div>
+      <Skeleton className="h-9 w-28 rounded-lg" />
+    </div>
+  )
+}
+
+/** Skeleton para ThemeCard */
+export function ThemeCardSkeleton() {
+  return (
+    <div className="glass rounded-2xl overflow-hidden">
+      <div className="h-16 w-full bg-surface-800/50 flex items-center justify-between px-4">
+        <div className="flex items-center gap-3">
+          <Skeleton className="h-9 w-9 rounded-xl" />
+          <div className="space-y-1.5">
+            <Skeleton className="h-4 w-20" />
+            <Skeleton className="h-2 w-12" />
+          </div>
+        </div>
+        <Skeleton className="h-7 w-12 rounded-full" />
+      </div>
+      <div className="p-4 space-y-4">
+        <div className="flex gap-3">
+          <Skeleton className="h-12 flex-1 rounded-lg" />
+          <Skeleton className="h-12 flex-1 rounded-lg" />
+          <Skeleton className="h-12 flex-1 rounded-lg" />
+        </div>
+        <Skeleton className="h-8 w-full rounded-lg" />
+        <div className="flex justify-end pt-2 border-t border-surface-800/30">
+          <Skeleton className="h-7 w-20 rounded-lg" />
+        </div>
+      </div>
+    </div>
+  )
+}

@@ -115,3 +115,26 @@ export interface TopVideo {
   store_logo: string | null
   engagement_score: number
 }
+
+export interface AppTheme {
+  id: string
+  season_name: string
+  primary_color: string
+  secondary_color: string
+  accent_color: string
+  button_radius: string
+  icon_url: string | null
+  icon_set_url: string | null
+  is_active_override: boolean
+}
+
+export type BiPeriod = 'today' | '7d' | '30d' | 'custom'
+
+export interface BiFilterState {
+  period: BiPeriod
+  startDate: string | null
+  endDate: string | null
+  category: string | null
+  region: string | null
+}
+

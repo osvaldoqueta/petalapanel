@@ -19,16 +19,21 @@ function getStatusBadge(campaign: AdCampaign) {
   return { label: 'Ativa', color: 'bg-petala-500/10 text-petala-400' }
 }
 
-export function CampaignTable() {
+export function CampaignTable({ storeId }: { storeId?: string | null }) {
   const { data: campaigns, isLoading } = useQuery<AdCampaign[]>({
-    queryKey: ['admin-campaigns'],
+    queryKey: ['admin-campaigns', storeId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('ad_campaigns')
         .select('*')
         .order('created_at', { ascending: false })
         .limit(50)
 
+      if (storeId) {
+        query = query.eq('store_id', storeId)
+      }
+
+      const { data, error } = await query
       if (error) throw error
       return data as AdCampaign[]
     },

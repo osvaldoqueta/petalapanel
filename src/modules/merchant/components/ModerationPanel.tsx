@@ -13,16 +13,22 @@ interface ModerationItem {
   store_name: string; created_at: string
 }
 
-export function ModerationPanel() {
+export function ModerationPanel({ storeId }: { storeId?: string | null }) {
   const { data: items, isLoading } = useQuery<ModerationItem[]>({
-    queryKey: ['admin-moderation'],
+    queryKey: ['admin-moderation', storeId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('store_inventory')
         .select('id, name, video_url, image_url, video_moderation_status, video_moderation_reason, created_at, stores!inner(store_name)')
         .not('video_url', 'is', null)
         .in('video_moderation_status', ['pending', 'rejected'])
         .order('created_at', { ascending: false }).limit(50)
+
+      if (storeId) {
+        query = query.eq('store_id', storeId)
+      }
+
+      const { data, error } = await query
       if (error) throw error
       return (data || []).map((i: Record<string, unknown>) => ({
         id: String(i.id), name: String(i.name), video_url: String(i.video_url),
