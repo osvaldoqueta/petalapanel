@@ -46,7 +46,9 @@ export interface StoreInventory {
   id: string
   store_id: string
   name: string
+  plant_species?: string
   price: number
+  weight_kg?: number
   original_price: number | null
   discount_percent: number | null
   image_url: string | null
@@ -54,6 +56,7 @@ export interface StoreInventory {
   video_moderation_status: 'pending' | 'approved' | 'rejected' | null
   video_moderation_reason: string | null
   is_active: boolean
+  is_promoted?: boolean
   is_flash_sale: boolean
   flash_sale_ends_at: string | null
   category: string | null
@@ -68,14 +71,21 @@ export interface StoreInventory {
 export interface AdCampaign {
   id: string
   store_id: string
-  title: string
+  title?: string
+  name?: string
   image_url: string | null
   target_url: string | null
-  start_date: string
-  end_date: string
-  is_active: boolean
-  impressions: number
-  clicks: number
+  start_date?: string
+  starts_at?: string
+  end_date?: string
+  ends_at?: string
+  is_active?: boolean
+  status?: string
+  budget_total?: number
+  budget_spent?: number
+  cpc?: number
+  impressions?: number
+  clicks?: number
   created_at: string
 }
 

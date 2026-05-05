@@ -233,5 +233,14 @@ Durante os testes de produção, descobrimos que a estrutura do Petala App difer
 - [x] **Exportação CSV/JSON LGPD:** Hook modular de exportação de dados higienizados para o navegador (sem vazar PII), convertendo o payload REST da Supabase em relatórios corporativos.
 - [x] **Np1 Compliance (CLS Zero):** Refinamento no `Skeleton.tsx` para assegurar que as tabelas de Moderação e os Cards Temáticos pré-renderizem áreas estritas no DOM antes do network return.
 
+### 🛍️ Sprint 3.0 — Merchant Hub Pro (2026-05-05)
+
+**Objetivo:** Desbloquear as capacidades completas de CRUD de inventário e criação de anúncios patrocinados para o Lojista (papéis `Seller` e `Merchant`), utilizando o isolamento via Tenancy.
+
+- [x] **Repository Pattern (`merchantRepository.ts`):** Todas as queries referentes ao Lojista (Inventário, KPIs, Campanhas) foram centralizadas num *Repository* puro que exige o `storeId`, mitigando o risco de cross-tenant data leakage.
+- [x] **Gestão de Inventário (`MerchantInventory`):** O lojista agora possui uma tabela dedicada aos seus produtos (`store_inventory`), onde pode utilizar uma busca local O(n) rápida e um form modal limpo para registrar Espécie, Peso, Preço, e mídias. O status de Moderação IA reflete em tempo real no dashboard.
+- [x] **Ads & Campaign Manager (`AdsManager`):** Introdução do portal de criação de anúncios. O Lojista cria campanhas com budget e CPC personalizados, e na mesma tela, anexa seus produtos orgânicos que imediatamente recebem `is_promoted = true` no app nativo. A tela inclui um gráfico BarChart (Private BI) isolado.
+- [x] **Performance UI/UX (Np1):** A navegação dentro do Hub entre Dashboard / Inventário / Marketing agora utiliza o `startTransition` do React 18, garantindo alternância das views pesadas com INP inferior a 100ms e preservando estado de cache via TanStack Query.
+
 *Atualizar este arquivo após cada sprint com novas decisões e alterações.*
 

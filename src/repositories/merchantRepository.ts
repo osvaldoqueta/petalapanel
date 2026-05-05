@@ -1,0 +1,165 @@
+import { supabase } from '@/integrations/supabase/client'
+import type { StoreInventory, AdCampaign } from '@/shared/types'
+
+export const merchantRepository = {
+  // ─── KPIs ────────────────────────────────────────────────────────────────
+  getKPIs: async (storeId: string | null) => {
+    const now = new Date()
+    const thirtyDaysAgo = new Date(now)
+    thirtyDaysAgo.setDate(now.getDate() - 30)
+
+    let ordersQuery = supabase
+      .from('orders')
+      .select('total_amount')
+      .gte('created_at', thirtyDaysAgo.toISOString())
+
+    if (storeId) ordersQuery = ordersQuery.eq('store_id', storeId)
+    const { data: orders } = await ordersQuery
+
+    const revenue = (orders || []).reduce((s, o) => s + (Number(o.total_amount) || 0), 0)
+    const orderCount = orders?.length || 0
+    const aov = orderCount > 0 ? revenue / orderCount : 0
+
+    let videoQuery = supabase
+      .from('store_inventory')
+      .select('video_views')
+      .not('video_url', 'is', null)
+
+    if (storeId) videoQuery = videoQuery.eq('store_id', storeId)
+    const { data: videos } = await videoQuery
+
+    const totalViews = (videos || []).reduce((s, v) => s + (Number(v.video_views) || 0), 0)
+
+    return { revenue, orderCount, aov, totalViews }
+  },
+
+  // ─── Inventory ───────────────────────────────────────────────────────────
+  getInventory: async (storeId: string | null) => {
+    let query = supabase
+      .from('store_inventory')
+      .select('*')
+      .order('created_at', { ascending: false })
+
+    if (storeId) query = query.eq('store_id', storeId)
+    const { data, error } = await query
+    
+    if (error) throw error
+    return data as StoreInventory[]
+  },
+
+  upsertProduct: async (
+    storeId: string, 
+    productId: string | null, 
+    productData: {
+      name: string
+      plant_species: string
+      price: number
+      weight_kg: number
+      image_url: string
+      video_url: string
+    }
+  ) => {
+    const payload: any = {
+      store_id: storeId,
+      name: productData.name,
+      plant_species: productData.plant_species,
+      price: productData.price,
+      weight_kg: productData.weight_kg,
+      image_url: productData.image_url,
+      video_url: productData.video_url || null,
+    }
+
+    // If there's a video, and we are updating or creating, set to pending if changed.
+    // We will do this explicitly if the UI forces it, but Supabase might have triggers.
+    // For now, if a video_url is provided, we force video_moderation_status to pending.
+    if (productData.video_url) {
+      payload.video_moderation_status = 'pending'
+      payload.video_moderation_reason = null
+    }
+
+    let query
+    if (productId) {
+      query = supabase.from('store_inventory').update(payload).eq('id', productId)
+    } else {
+      query = supabase.from('store_inventory').insert(payload)
+    }
+
+    const { data, error } = await query.select().single()
+    if (error) throw error
+    return data as StoreInventory
+  },
+
+  // ─── Campaigns ───────────────────────────────────────────────────────────
+  getCampaigns: async (storeId: string | null) => {
+    let query = supabase
+      .from('ad_campaigns')
+      .select('*')
+      .order('created_at', { ascending: false })
+
+    if (storeId) query = query.eq('store_id', storeId)
+    const { data, error } = await query
+    
+    if (error) throw error
+    // Casting manually as types may vary based on sprint
+    return data as any[]
+  },
+
+  createCampaign: async (storeId: string, campaignData: { name: string, budget: number, cpc: number }) => {
+    const { data, error } = await supabase
+      .from('ad_campaigns')
+      .insert({
+        store_id: storeId,
+        name: campaignData.name,
+        budget_total: campaignData.budget,
+        cpc: campaignData.cpc,
+        status: 'active'
+      })
+      .select()
+      .single()
+
+    if (error) throw error
+    return data
+  },
+
+  linkProductsToCampaign: async (storeId: string, campaignId: string, productIds: string[]) => {
+    if (productIds.length === 0) return
+
+    const { error } = await supabase
+      .from('store_inventory')
+      .update({
+        is_promoted: true,
+        ad_priority: 100,
+        ad_campaign_id: campaignId
+      })
+      .in('id', productIds)
+      .eq('store_id', storeId) // Security boundary
+
+    if (error) throw error
+  },
+
+  // ─── Moderation ──────────────────────────────────────────────────────────
+  getModerationItems: async (storeId: string | null) => {
+    let query = supabase
+      .from('store_inventory')
+      .select('id, name, video_url, image_url, video_moderation_status, video_moderation_reason, created_at, stores!inner(store_name)')
+      .not('video_url', 'is', null)
+      .in('video_moderation_status', ['pending', 'rejected'])
+      .order('created_at', { ascending: false })
+      .limit(50)
+
+    if (storeId) query = query.eq('store_id', storeId)
+    const { data, error } = await query
+    
+    if (error) throw error
+    return (data || []).map((i: any) => ({
+      id: String(i.id),
+      name: String(i.name),
+      video_url: String(i.video_url),
+      image_url: i.image_url,
+      video_moderation_status: i.video_moderation_status,
+      video_moderation_reason: i.video_moderation_reason,
+      store_name: i.stores?.store_name || 'Loja',
+      created_at: String(i.created_at),
+    }))
+  }
+}

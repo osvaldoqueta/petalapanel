@@ -2,7 +2,7 @@
  * ModerationPanel — Pétala Safety Shield moderation view.
  */
 import { useQuery } from '@tanstack/react-query'
-import { supabase } from '@/integrations/supabase/client'
+import { merchantRepository } from '@/repositories/merchantRepository'
 import { TableSkeleton } from '@/components/Skeleton'
 import { cn, formatRelativeDate } from '@/lib/utils'
 import { Shield, AlertTriangle, CheckCircle, Clock, Video } from 'lucide-react'
@@ -16,29 +16,7 @@ interface ModerationItem {
 export function ModerationPanel({ storeId }: { storeId?: string | null }) {
   const { data: items, isLoading } = useQuery<ModerationItem[]>({
     queryKey: ['admin-moderation', storeId],
-    queryFn: async () => {
-      let query = supabase
-        .from('store_inventory')
-        .select('id, name, video_url, image_url, video_moderation_status, video_moderation_reason, created_at, stores!inner(store_name)')
-        .not('video_url', 'is', null)
-        .in('video_moderation_status', ['pending', 'rejected'])
-        .order('created_at', { ascending: false }).limit(50)
-
-      if (storeId) {
-        query = query.eq('store_id', storeId)
-      }
-
-      const { data, error } = await query
-      if (error) throw error
-      return (data || []).map((i: Record<string, unknown>) => ({
-        id: String(i.id), name: String(i.name), video_url: String(i.video_url),
-        image_url: i.image_url as string | null,
-        video_moderation_status: i.video_moderation_status as string | null,
-        video_moderation_reason: i.video_moderation_reason as string | null,
-        store_name: (i.stores as Record<string, unknown>)?.store_name as string || 'Loja',
-        created_at: String(i.created_at),
-      }))
-    },
+    queryFn: () => merchantRepository.getModerationItems(storeId || null),
     staleTime: 5 * 60 * 1000,
   })
 

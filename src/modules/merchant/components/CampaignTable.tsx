@@ -2,7 +2,7 @@
  * CampaignTable — Tabela de ad_campaigns com status, métricas e ações.
  */
 import { useQuery } from '@tanstack/react-query'
-import { supabase } from '@/integrations/supabase/client'
+import { merchantRepository } from '@/repositories/merchantRepository'
 import { TableSkeleton } from '@/components/Skeleton'
 import { cn, formatCompact } from '@/lib/utils'
 import { ExternalLink, Eye, MousePointer } from 'lucide-react'
@@ -10,33 +10,19 @@ import type { AdCampaign } from '@/shared/types'
 
 function getStatusBadge(campaign: AdCampaign) {
   const now = new Date()
-  const start = new Date(campaign.start_date)
-  const end = new Date(campaign.end_date)
+  const start = new Date(campaign.start_date || campaign.starts_at || '')
+  const end = new Date(campaign.end_date || campaign.ends_at || '')
 
-  if (!campaign.is_active) return { label: 'Pausada', color: 'bg-surface-700 text-surface-400' }
+  if (!campaign.is_active && campaign.status !== 'active') return { label: 'Pausada', color: 'bg-surface-700 text-surface-400' }
   if (now < start) return { label: 'Agendada', color: 'bg-accent-blue/10 text-accent-blue' }
-  if (now > end) return { label: 'Encerrada', color: 'bg-surface-800 text-surface-500' }
+  if (end && now > end) return { label: 'Encerrada', color: 'bg-surface-800 text-surface-500' }
   return { label: 'Ativa', color: 'bg-petala-500/10 text-petala-400' }
 }
 
 export function CampaignTable({ storeId }: { storeId?: string | null }) {
   const { data: campaigns, isLoading } = useQuery<AdCampaign[]>({
     queryKey: ['admin-campaigns', storeId],
-    queryFn: async () => {
-      let query = supabase
-        .from('ad_campaigns')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(50)
-
-      if (storeId) {
-        query = query.eq('store_id', storeId)
-      }
-
-      const { data, error } = await query
-      if (error) throw error
-      return data as AdCampaign[]
-    },
+    queryFn: () => merchantRepository.getCampaigns(storeId || null),
     staleTime: 5 * 60 * 1000,
   })
 
@@ -72,8 +58,10 @@ export function CampaignTable({ storeId }: { storeId?: string | null }) {
             ) : (
               campaigns.map((campaign) => {
                 const status = getStatusBadge(campaign)
-                const ctr = campaign.impressions > 0
-                  ? ((campaign.clicks / campaign.impressions) * 100).toFixed(2)
+                const impressions = campaign.impressions || 0
+                const clicks = campaign.clicks || 0
+                const ctr = impressions > 0
+                  ? ((clicks / impressions) * 100).toFixed(2)
                   : '0.00'
 
                 return (
@@ -89,7 +77,7 @@ export function CampaignTable({ storeId }: { storeId?: string | null }) {
                         )}
                         <div>
                           <p className="text-sm font-medium text-white truncate max-w-[200px]">
-                            {campaign.title}
+                            {campaign.title || campaign.name}
                           </p>
                         </div>
                       </div>
@@ -104,21 +92,21 @@ export function CampaignTable({ storeId }: { storeId?: string | null }) {
                     </td>
                     <td className="px-4 py-3">
                       <span className="text-xs text-surface-400 font-mono">
-                        {new Date(campaign.start_date).toLocaleDateString('pt-BR')}
+                        {new Date(campaign.start_date || campaign.starts_at || new Date()).toLocaleDateString('pt-BR')}
                         {' → '}
-                        {new Date(campaign.end_date).toLocaleDateString('pt-BR')}
+                        {campaign.end_date || campaign.ends_at ? new Date(campaign.end_date || campaign.ends_at || '').toLocaleDateString('pt-BR') : 'Indeterminado'}
                       </span>
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1.5 text-sm text-surface-300">
                         <Eye className="h-3.5 w-3.5 text-surface-500" />
-                        {formatCompact(campaign.impressions)}
+                        {formatCompact(impressions)}
                       </div>
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1.5 text-sm text-surface-300">
                         <MousePointer className="h-3.5 w-3.5 text-surface-500" />
-                        {formatCompact(campaign.clicks)}
+                        {formatCompact(clicks)}
                       </div>
                     </td>
                     <td className="px-4 py-3">
