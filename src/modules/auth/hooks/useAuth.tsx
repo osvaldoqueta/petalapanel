@@ -73,6 +73,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (s?.user) {
           const p = await fetchProfile(s.user.id)
           setProfile(p)
+          // Reject users without admin roles
+          if (!p?.role || !['SuperAdmin', 'Admin', 'Lojista'].includes(p.role)) {
+            await supabase.auth.signOut()
+            setSession(null)
+            setProfile(null)
+          }
         } else {
           setProfile(null)
         }
@@ -109,7 +115,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: window.location.origin,
+        redirectTo: `${window.location.origin}/`,
       },
     })
     if (error) return { error: error.message }
