@@ -6,6 +6,7 @@
  */
 import { useState, useEffect, useCallback, createContext, useContext } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { toast } from 'sonner'
 import { supabase } from '@/integrations/supabase/client'
 import type { Profile, UserRole } from '@/shared/types'
 import type { Session } from '@supabase/supabase-js'
@@ -78,6 +79,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             await supabase.auth.signOut()
             setSession(null)
             setProfile(null)
+            toast.error('Acesso negado: Conta sem privilégios administrativos.')
           }
         } else {
           setProfile(null)
