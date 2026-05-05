@@ -23,10 +23,10 @@ interface AuthState {
   signOut: () => Promise<void>
 }
 
-const ROLE_HIERARCHY: Record<UserRole, number> = {
-  Lojista: 1,
-  Admin: 2,
-  SuperAdmin: 3,
+const ROLE_HIERARCHY: Record<string, number> = {
+  lojista: 1,
+  admin: 2,
+  superadmin: 3,
 }
 
 const AuthContext = createContext<AuthState | null>(null)
@@ -58,7 +58,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const p = await fetchProfile(s.user.id)
         setProfile(p)
         // Reject users without admin roles
-        if (!p?.role || !['SuperAdmin', 'Admin', 'Lojista'].includes(p.role)) {
+        const userRole = p?.role?.toLowerCase()
+        if (!userRole || !['superadmin', 'admin', 'lojista'].includes(userRole)) {
           await supabase.auth.signOut()
           setSession(null)
           setProfile(null)
@@ -75,7 +76,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const p = await fetchProfile(s.user.id)
           setProfile(p)
           // Reject users without admin roles
-          if (!p?.role || !['SuperAdmin', 'Admin', 'Lojista'].includes(p.role)) {
+          const userRole = p?.role?.toLowerCase()
+          if (!userRole || !['superadmin', 'admin', 'lojista'].includes(userRole)) {
             await supabase.auth.signOut()
             setSession(null)
             setProfile(null)
@@ -92,7 +94,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const hasRole = useCallback((minRole: UserRole): boolean => {
     if (!profile?.role) return false
-    return ROLE_HIERARCHY[profile.role] >= ROLE_HIERARCHY[minRole]
+    const current = profile.role.toLowerCase()
+    const required = minRole.toLowerCase()
+    return (ROLE_HIERARCHY[current] || 0) >= (ROLE_HIERARCHY[required] || 0)
   }, [profile])
 
   const signIn = useCallback(async (email: string, password: string) => {
@@ -103,7 +107,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!s?.user) return { error: 'Sessão não iniciada' }
 
     const p = await fetchProfile(s.user.id)
-    if (!p?.role || !['SuperAdmin', 'Admin', 'Lojista'].includes(p.role)) {
+    const userRole = p?.role?.toLowerCase()
+    if (!userRole || !['superadmin', 'admin', 'lojista'].includes(userRole)) {
       await supabase.auth.signOut()
       return { error: 'Acesso negado. Apenas administradores podem acessar o painel.' }
     }
