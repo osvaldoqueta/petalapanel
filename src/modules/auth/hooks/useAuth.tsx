@@ -18,6 +18,7 @@ interface AuthState {
   role: UserRole | null
   hasRole: (minRole: UserRole) => boolean
   signIn: (email: string, password: string) => Promise<{ error: string | null }>
+  signInWithGoogle: () => Promise<{ error: string | null }>
   signOut: () => Promise<void>
 }
 
@@ -104,6 +105,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { error: null }
   }, [fetchProfile, navigate])
 
+  const signInWithGoogle = useCallback(async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: window.location.origin,
+      },
+    })
+    if (error) return { error: error.message }
+    return { error: null }
+  }, [])
+
   const signOut = useCallback(async () => {
     await supabase.auth.signOut()
     setSession(null)
@@ -119,6 +131,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     role: profile?.role ?? null,
     hasRole,
     signIn,
+    signInWithGoogle,
     signOut,
   }
 
