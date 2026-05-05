@@ -24,9 +24,10 @@ interface AuthState {
 }
 
 const ROLE_HIERARCHY: Record<string, number> = {
-  lojista: 1,
-  admin: 2,
-  superadmin: 3,
+  seller: 1,
+  support: 2,
+  'regional manager': 3,
+  'super user': 4,
 }
 
 const AuthContext = createContext<AuthState | null>(null)
@@ -40,14 +41,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const fetchProfile = useCallback(async (userId: string) => {
     const { data, error } = await supabase
       .from('profiles')
-      .select('id, full_name, avatar_url, role, created_at, updated_at')
-      .eq('id', userId)
+      .select(`
+        id,
+        user_id,
+        full_name,
+        avatar_url,
+        roles!profiles_role_id_fkey(name),
+        created_at,
+        updated_at
+      `)
+      .eq('user_id', userId)
       .single()
+
     if (error) {
       console.error('[Auth] Failed to fetch profile:', error.message)
       return null
     }
-    return data as Profile
+
+    // roles can be an array or an object depending on the relationship
+    const roleName = Array.isArray(data.roles) ? data.roles[0]?.name : data.roles?.name
+
+    return {
+      id: data.user_id,
+      full_name: data.full_name,
+      avatar_url: data.avatar_url,
+      role: roleName,
+      created_at: data.created_at,
+      updated_at: data.updated_at
+    } as Profile
   }, [])
 
   useEffect(() => {
@@ -59,7 +80,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setProfile(p)
         // Reject users without admin roles
         const userRole = p?.role?.toLowerCase()
-        if (!userRole || !['superadmin', 'admin', 'lojista'].includes(userRole)) {
+        if (!userRole || !['super user', 'regional manager', 'support', 'seller'].includes(userRole)) {
           await supabase.auth.signOut()
           setSession(null)
           setProfile(null)
@@ -77,7 +98,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setProfile(p)
           // Reject users without admin roles
           const userRole = p?.role?.toLowerCase()
-          if (!userRole || !['superadmin', 'admin', 'lojista'].includes(userRole)) {
+          if (!userRole || !['super user', 'regional manager', 'support', 'seller'].includes(userRole)) {
             await supabase.auth.signOut()
             setSession(null)
             setProfile(null)
@@ -108,7 +129,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const p = await fetchProfile(s.user.id)
     const userRole = p?.role?.toLowerCase()
-    if (!userRole || !['superadmin', 'admin', 'lojista'].includes(userRole)) {
+    if (!userRole || !['super user', 'regional manager', 'support', 'seller'].includes(userRole)) {
       await supabase.auth.signOut()
       return { error: 'Acesso negado. Apenas administradores podem acessar o painel.' }
     }

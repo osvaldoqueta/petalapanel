@@ -1,7 +1,7 @@
 // ─── Shared Types (synced from petalapp) ─────────────────────────────────────
 // Keep these in parity with petalapp/src/types/ when the schema changes.
 
-export type UserRole = 'SuperAdmin' | 'Admin' | 'Lojista'
+export type UserRole = 'Super User' | 'Regional Manager' | 'Support' | 'Seller'
 
 export interface Profile {
   id: string

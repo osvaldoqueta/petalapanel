@@ -40,12 +40,12 @@ export default function App() {
               <Route path="/login" element={<LoginPage />} />
 
               {/* Protected Dashboard */}
-              <Route element={<ProtectedRoute minRole="Lojista"><DashboardLayout /></ProtectedRoute>}>
-                <Route index element={<ProtectedRoute minRole="Admin"><BiDashboard /></ProtectedRoute>} />
-                <Route path="bi" element={<ProtectedRoute minRole="Admin"><BiDashboard /></ProtectedRoute>} />
-                <Route path="design-system" element={<ProtectedRoute minRole="SuperAdmin"><DesignSystemPage /></ProtectedRoute>} />
+              <Route element={<ProtectedRoute minRole="Seller"><DashboardLayout /></ProtectedRoute>}>
+                <Route index element={<ProtectedRoute minRole="Support"><BiDashboard /></ProtectedRoute>} />
+                <Route path="bi" element={<ProtectedRoute minRole="Support"><BiDashboard /></ProtectedRoute>} />
+                <Route path="design-system" element={<ProtectedRoute minRole="Super User"><DesignSystemPage /></ProtectedRoute>} />
                 <Route path="merchant" element={<MerchantHubPage />} />
-                <Route path="moderation" element={<ProtectedRoute minRole="Admin"><MerchantHubPage /></ProtectedRoute>} />
+                <Route path="moderation" element={<ProtectedRoute minRole="Support"><MerchantHubPage /></ProtectedRoute>} />
               </Route>
             </Routes>
           </Suspense>

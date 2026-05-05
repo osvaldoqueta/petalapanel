@@ -15,7 +15,7 @@ interface Props {
   minRole?: UserRole
 }
 
-export function ProtectedRoute({ children, minRole = 'Lojista' }: Props) {
+export function ProtectedRoute({ children, minRole = 'Seller' }: Props) {
   const { isLoading, isAuthenticated, hasRole } = useAuth()
 
   if (isLoading) {
