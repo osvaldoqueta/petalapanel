@@ -162,9 +162,9 @@ Responda APENAS com um JSON válido, sem markdown, exatamente neste formato:
 
     // Calculate discount
     let discount = null
-    const original = Number(formData.original_price)
-    const current = Number(formData.price)
-    if (original > current) {
+    const original = Number(formData.original_price?.toString().replace(',', '.')) || 0
+    const current = Number(formData.price?.toString().replace(',', '.')) || 0
+    if (original > current && original > 0) {
       discount = Math.round(((original - current) / original) * 100)
     }
 
@@ -173,13 +173,13 @@ Responda APENAS com um JSON válido, sem markdown, exatamente neste formato:
         name: formData.name,
         plant_species: formData.plant_species,
         price: current,
-        weight_kg: Number(formData.weight_kg),
+        weight_kg: Number(formData.weight_kg?.toString().replace(',', '.')) || 0.5,
         stock_qty: Number(formData.stock_qty),
         image_url: formData.image_url,
         video_url: formData.video_url,
         ai_description: formData.ai_description,
         is_active: formData.is_active,
-        original_price: formData.original_price ? original : null,
+        original_price: original > 0 ? original : null,
         discount_percent: discount,
         is_flash_sale: formData.is_flash_sale,
         flash_sale_ends_at: formData.is_flash_sale && formData.flash_sale_ends_at 
@@ -191,9 +191,9 @@ Responda APENAS com um JSON válido, sem markdown, exatamente neste formato:
       toast.success(product ? 'Produto atualizado' : 'Produto adicionado ao estoque', { id: 'prod' })
       onSuccess()
       onClose()
-    } catch (err) {
+    } catch (err: any) {
       console.error(err)
-      toast.error('Erro ao salvar produto', { id: 'prod' })
+      toast.error(`Erro ao salvar: ${err?.message || 'Desconhecido'}`, { id: 'prod' })
     } finally {
       setIsSubmitting(false)
     }

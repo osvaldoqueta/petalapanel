@@ -123,6 +123,26 @@ export const merchantRepository = {
     return data as StoreInventory
   },
 
+  bulkUpdateStatus: async (storeId: string, productIds: string[], is_active: boolean) => {
+    const { error } = await supabase
+      .from('store_inventory')
+      .update({ is_active })
+      .eq('store_id', storeId)
+      .in('id', productIds)
+
+    if (error) throw error
+  },
+
+  bulkDeleteProducts: async (storeId: string, productIds: string[]) => {
+    const { error } = await supabase
+      .from('store_inventory')
+      .delete()
+      .eq('store_id', storeId)
+      .in('id', productIds)
+
+    if (error) throw error
+  },
+
   // ─── Campaigns ───────────────────────────────────────────────────────────
   getCampaigns: async (storeId: string | null) => {
     let query = supabase

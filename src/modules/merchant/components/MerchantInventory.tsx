@@ -82,6 +82,9 @@ export function MerchantInventory() {
   
   const [productToDelete, setProductToDelete] = useState<StoreInventory | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [selectedIds, setSelectedIds] = useState<string[]>([])
+  const [isBulkModifying, setIsBulkModifying] = useState(false)
+  const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false)
 
   const { data: inventory, isLoading, refetch } = useQuery<StoreInventory[]>({
     queryKey: ['merchant-inventory', storeId],
@@ -117,6 +120,51 @@ export function MerchantInventory() {
     return null
   }
 
+  const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.checked) {
+      setSelectedIds(filteredInventory.map(item => item.id))
+    } else {
+      setSelectedIds([])
+    }
+  }
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id])
+  }
+
+  const handleBulkStatus = async (isActive: boolean) => {
+    if (!storeId || selectedIds.length === 0) return
+    setIsBulkModifying(true)
+    try {
+      await merchantRepository.bulkUpdateStatus(storeId, selectedIds, isActive)
+      toast.success(`Produtos ${isActive ? 'ativados' : 'inativados'} com sucesso`)
+      setSelectedIds([])
+      refetch()
+    } catch (error) {
+      console.error(error)
+      toast.error('Erro ao atualizar status em massa')
+    } finally {
+      setIsBulkModifying(false)
+    }
+  }
+
+  const confirmBulkDelete = async () => {
+    if (!storeId || selectedIds.length === 0) return
+    setIsBulkModifying(true)
+    try {
+      await merchantRepository.bulkDeleteProducts(storeId, selectedIds)
+      toast.success('Produtos excluídos com sucesso')
+      setSelectedIds([])
+      setShowBulkDeleteConfirm(false)
+      refetch()
+    } catch (error) {
+      console.error(error)
+      toast.error('Erro ao excluir produtos em massa')
+    } finally {
+      setIsBulkModifying(false)
+    }
+  }
+
   const handleDelete = async () => {
     if (!productToDelete || !storeId) return
     setIsDeleting(true)
@@ -136,24 +184,58 @@ export function MerchantInventory() {
   return (
     <div className="space-y-6">
       {/* Header Actions */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 glass p-4 rounded-2xl">
-        <div className="relative w-full sm:w-72">
-          <input
-            type="text"
-            placeholder="Buscar por nome ou espécie..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-surface-900/50 border border-surface-700 rounded-xl py-2 px-4 pl-10 text-sm text-white placeholder:text-surface-500 focus:outline-none focus:border-petala-500 transition-all"
-          />
-          <Search className="absolute left-3.5 top-2.5 h-4 w-4 text-surface-500" />
-        </div>
-        <button
-          onClick={openNewModal}
-          className="w-full sm:w-auto gradient-primary px-5 py-2 rounded-xl text-sm font-semibold text-white shadow-glow hover:brightness-110 transition-all flex items-center justify-center gap-2"
-        >
-          <Plus className="h-4 w-4" />
-          Novo Produto
-        </button>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 glass p-4 rounded-2xl min-h-[72px]">
+        {selectedIds.length > 0 ? (
+          <div className="flex items-center gap-4 w-full animate-fade-in">
+            <span className="text-sm font-bold text-petala-400 whitespace-nowrap">
+              {selectedIds.length} selecionado{selectedIds.length > 1 ? 's' : ''}
+            </span>
+            <div className="flex-1 flex items-center gap-2">
+              <button 
+                onClick={() => handleBulkStatus(true)}
+                disabled={isBulkModifying}
+                className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-surface-800 text-white hover:bg-surface-700 transition-colors disabled:opacity-50"
+              >
+                Ativar
+              </button>
+              <button 
+                onClick={() => handleBulkStatus(false)}
+                disabled={isBulkModifying}
+                className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-surface-800 text-white hover:bg-surface-700 transition-colors disabled:opacity-50"
+              >
+                Inativar
+              </button>
+              <div className="flex-1" />
+              <button 
+                onClick={() => setShowBulkDeleteConfirm(true)}
+                disabled={isBulkModifying}
+                className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-accent-rose/10 text-accent-rose hover:bg-accent-rose/20 transition-colors disabled:opacity-50"
+              >
+                Excluir
+              </button>
+            </div>
+          </div>
+        ) : (
+          <>
+            <div className="relative w-full sm:w-72">
+              <input
+                type="text"
+                placeholder="Buscar por nome ou espécie..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full bg-surface-900/50 border border-surface-700 rounded-xl py-2 px-4 pl-10 text-sm text-white placeholder:text-surface-500 focus:outline-none focus:border-petala-500 transition-all"
+              />
+              <Search className="absolute left-3.5 top-2.5 h-4 w-4 text-surface-500" />
+            </div>
+            <button
+              onClick={openNewModal}
+              className="w-full sm:w-auto gradient-primary px-5 py-2 rounded-xl text-sm font-semibold text-white shadow-glow hover:brightness-110 transition-all flex items-center justify-center gap-2"
+            >
+              <Plus className="h-4 w-4" />
+              Novo Produto
+            </button>
+          </>
+        )}
       </div>
 
       {/* Table */}
@@ -165,6 +247,14 @@ export function MerchantInventory() {
             <table className="w-full min-w-[900px]">
               <thead>
                 <tr className="border-b border-surface-800/50 bg-surface-900/20">
+                  <th className="px-4 py-3 w-10">
+                    <input 
+                      type="checkbox" 
+                      className="rounded border-surface-700 text-petala-500 focus:ring-petala-500 bg-surface-900"
+                      checked={filteredInventory.length > 0 && selectedIds.length === filteredInventory.length}
+                      onChange={handleSelectAll}
+                    />
+                  </th>
                   <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-widest text-surface-500">Produto</th>
                   <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-widest text-surface-500">Espécie</th>
                   <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-widest text-surface-500">Preço</th>
@@ -177,7 +267,7 @@ export function MerchantInventory() {
               <tbody className="divide-y divide-surface-800/20">
                 {filteredInventory.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-4 py-12 text-center text-surface-400">
+                    <td colSpan={8} className="px-4 py-12 text-center text-surface-400">
                       Nenhum produto encontrado.
                     </td>
                   </tr>
@@ -185,8 +275,17 @@ export function MerchantInventory() {
                   filteredInventory.map((item) => (
                     <tr key={item.id} className={cn(
                       "hover:bg-surface-800/20 transition-colors",
-                      !item.is_active && "opacity-60 grayscale"
+                      !item.is_active && "opacity-60 grayscale",
+                      selectedIds.includes(item.id) && "bg-petala-500/5"
                     )}>
+                      <td className="px-4 py-3">
+                        <input 
+                          type="checkbox" 
+                          className="rounded border-surface-700 text-petala-500 focus:ring-petala-500 bg-surface-900"
+                          checked={selectedIds.includes(item.id)}
+                          onChange={() => toggleSelect(item.id)}
+                        />
+                      </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
                           {item.image_url ? (
@@ -305,6 +404,16 @@ export function MerchantInventory() {
         onConfirm={handleDelete}
         onCancel={() => setProductToDelete(null)}
         isDeleting={isDeleting}
+      />
+
+      {/* Bulk Delete Confirmation */}
+      <ConfirmDeleteModal
+        isOpen={showBulkDeleteConfirm}
+        title="Excluir Múltiplos Produtos"
+        description={`Você está prestes a excluir ${selectedIds.length} produtos permanentemente. Esta ação não pode ser desfeita.`}
+        onConfirm={confirmBulkDelete}
+        onCancel={() => setShowBulkDeleteConfirm(false)}
+        isDeleting={isBulkModifying}
       />
     </div>
   )
