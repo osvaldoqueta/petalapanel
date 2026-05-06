@@ -234,7 +234,7 @@ export const merchantRepository = {
         votes,
         is_verified_buyer,
         created_at,
-        store_inventory!inner(name, image_url)
+        store_inventory(name, image_url)
       `)
       .order('created_at', { ascending: false })
       .limit(100)

@@ -170,3 +170,57 @@ export interface BiFilterState {
   region: string | null
 }
 
+// ─── SuperAdmin Types ────────────────────────────────────────────────────────
+
+export interface AdminUser {
+  user_id: string
+  full_name: string | null
+  avatar_url: string | null
+  email: string | null
+  role_id: string | null
+  role_name: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface RoleOption {
+  id: string
+  name: string
+}
+
+export interface ModerationItem {
+  id: string
+  name: string
+  video_url: string
+  image_url: string | null
+  video_moderation_status: string
+  video_moderation_reason: string | null
+  price: number
+  store_id: string
+  store_name: string
+  store_owner_id: string
+  created_at: string
+}
+
+export interface SalesSettings {
+  id: number
+  store_fee_percentage: number
+  courier_fee_percentage: number
+  lojista_terms_url: string | null
+  courier_terms_url: string | null
+  discount_active: boolean
+  discount_percentage: number
+  updated_at: string
+}
+
+export interface FinancialMetrics {
+  gtv: number
+  platformRevenue: number
+  orderCount: number
+  avgTicket: number
+  gtvChange: number
+  revenueChange: number
+  countChange: number
+  ticketChange: number
+}
+

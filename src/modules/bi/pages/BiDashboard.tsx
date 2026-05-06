@@ -42,31 +42,44 @@ export default function BiDashboard() {
       const previousStart = new Date(currentStart)
       previousStart.setDate(currentStart.getDate() - days)
 
-      // Fetch current period
+      // Fetch current period — only paid orders
       const { data: currentOrders } = await supabase
         .from('orders')
-        .select('total_amount')
+        .select('total_amount, platform_fee')
+        .eq('payment_status', 'paid')
         .gte('created_at', currentStart.toISOString())
 
       // Previous period for comparison
       const { data: previousOrders } = await supabase
         .from('orders')
-        .select('total_amount')
+        .select('total_amount, platform_fee')
+        .eq('payment_status', 'paid')
         .gte('created_at', previousStart.toISOString())
         .lt('created_at', currentStart.toISOString())
 
-      const currentRevenue = (currentOrders || []).reduce(
+      const currentGTV = (currentOrders || []).reduce(
         (sum, o) => sum + (Number(o.total_amount) || 0), 0
       )
-      const previousRevenue = (previousOrders || []).reduce(
+      const previousGTV = (previousOrders || []).reduce(
         (sum, o) => sum + (Number(o.total_amount) || 0), 0
+      )
+
+      const currentRevenue = (currentOrders || []).reduce(
+        (sum, o) => sum + (Number(o.platform_fee) || 0), 0
+      )
+      const previousRevenue = (previousOrders || []).reduce(
+        (sum, o) => sum + (Number(o.platform_fee) || 0), 0
       )
 
       const currentCount = currentOrders?.length || 0
       const previousCount = previousOrders?.length || 0
 
-      const currentAOV = currentCount > 0 ? currentRevenue / currentCount : 0
-      const previousAOV = previousCount > 0 ? previousRevenue / previousCount : 0
+      const currentAOV = currentCount > 0 ? currentGTV / currentCount : 0
+      const previousAOV = previousCount > 0 ? previousGTV / previousCount : 0
+
+      const gtvChange = previousGTV > 0
+        ? ((currentGTV - previousGTV) / previousGTV) * 100
+        : 0
 
       const revenueChange = previousRevenue > 0
         ? ((currentRevenue - previousRevenue) / previousRevenue) * 100
@@ -91,6 +104,8 @@ export default function BiDashboard() {
       )
 
       return {
+        gtv: currentGTV,
+        gtvChange,
         revenue: currentRevenue,
         revenueChange,
         orderCount: currentCount,
@@ -149,14 +164,22 @@ export default function BiDashboard() {
       />
 
       {/* KPI Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        <MetricCard
+          title={`GTV (${filters.period})`}
+          value={formatCurrency(metrics?.gtv ?? 0)}
+          change={metrics?.gtvChange}
+          icon={<DollarSign className="h-5 w-5" />}
+          isLoading={isLoading}
+          accentColor="text-emerald-400"
+        />
         <MetricCard
           title={`Receita (${filters.period})`}
           value={formatCurrency(metrics?.revenue ?? 0)}
           change={metrics?.revenueChange}
-          icon={<DollarSign className="h-5 w-5" />}
+          icon={<TrendingUp className="h-5 w-5" />}
           isLoading={isLoading}
-          accentColor="text-emerald-400"
+          accentColor="text-accent-purple"
         />
         <MetricCard
           title={`Pedidos (${filters.period})`}
@@ -170,16 +193,16 @@ export default function BiDashboard() {
           title="Ticket Médio"
           value={formatCurrency(metrics?.aov ?? 0)}
           change={metrics?.aovChange}
-          icon={<TrendingUp className="h-5 w-5" />}
+          icon={<DollarSign className="h-5 w-5" />}
           isLoading={isLoading}
-          accentColor="text-accent-purple"
+          accentColor="text-accent-amber"
         />
         <MetricCard
           title="Video Views"
           value={formatCompact(metrics?.totalVideoViews ?? 0)}
           icon={<Video className="h-5 w-5" />}
           isLoading={isLoading}
-          accentColor="text-accent-amber"
+          accentColor="text-accent-rose"
         />
       </div>
 

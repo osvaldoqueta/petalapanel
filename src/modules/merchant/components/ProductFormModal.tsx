@@ -77,16 +77,10 @@ export function ProductFormModal({ storeId, product, isOpen, onClose, onSuccess 
     }
   }
 
-  // ─── Gemini 2.5 Flash — IA Copy + Identificar ───
+  // ─── Gemini 2.5 Flash — IA Copy + Identificar (via Edge Function) ───
   const handleIACopy = async () => {
     if (!formData.image_url) {
       toast.error('Adicione uma foto primeiro para a IA analisar')
-      return
-    }
-
-    const apiKey = import.meta.env.VITE_GEMINI_API_KEY
-    if (!apiKey) {
-      toast.error('Chave do Gemini não configurada')
       return
     }
 
@@ -103,72 +97,35 @@ export function ProductFormModal({ storeId, product, isOpen, onClose, onSuccess 
 
       const categoriesInfo = categories.map((c: any) => c.id).join(', ')
 
-      const prompt = `Você é um especialista em identificação de produtos e copywriter profissional para o marketplace Pétala (Brasil).
-Analise esta imagem de produto. O produto pode ser uma planta, flor, insumo, ferramenta, vaso, etc.
-
-Responda APENAS com um JSON válido, sem markdown, exatamente neste formato:
-{
-  "scientific_name": "Nome científico ou técnico completo do produto",
-  "popular_name": "Nome popular mais usado no Brasil para este produto",
-  "description": "Descrição de vendas irresistível de 2-3 frases. Seja poético, evocativo. Foque nos benefícios emocionais e visuais.",
-  "category_id": "O ID da categoria mais adequada desta lista: ${categoriesInfo || 'plantas, flores, acessórios, ferramentas, insumos, sementes, vasos, diversos'}"
-}`
-
-      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }, { inline_data: { mime_type: blob.type || 'image/jpeg', data: base64 } }] }],
-          generationConfig: { temperature: 0.7 }
-        })
+      const { data, error } = await supabase.functions.invoke('generate-product-description', {
+        body: {
+          image_base64: base64,
+          plant_name: formData.name,
+          language: 'pt',
+          categories_info: categoriesInfo || 'plantas, flores, acessórios, ferramentas, insumos, sementes, vasos, diversos'
+        }
       })
 
-      // Retry on 429
-      if (res.status === 429) {
-        toast.info('Muitas requisições. Tentando novamente em 3s...')
-        await new Promise(r => setTimeout(r, 3000))
-        return handleIACopy()
+      if (error) {
+        throw new Error(error.message || 'Falha ao processar com a IA')
       }
 
-      if (!res.ok) throw new Error(`Falha na API da IA (${res.status})`)
-      
-      const data = await res.json()
-      const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || ''
-      
-      // Robust JSON parser with regex fallback
-      let parsed: any
-      try {
-        const cleanText = rawText.replace(/^```json\s*/im, '').replace(/^```\s*/im, '').replace(/\s*```\s*$/im, '').trim()
-        parsed = JSON.parse(cleanText)
-      } catch {
-        // Regex fallback: extract individual fields
-        const extract = (key: string) => {
-          const match = rawText.match(new RegExp(`"${key}"\\s*:\\s*"([^"]*?)"`))
-          return match?.[1] || ''
-        }
-        parsed = {
-          scientific_name: extract('scientific_name'),
-          popular_name: extract('popular_name'),
-          description: extract('description'),
-          category_id: extract('category_id'),
-        }
-        if (!parsed.scientific_name && !parsed.popular_name) {
-          throw new Error('Não foi possível interpretar a resposta da IA')
-        }
+      if (data && data.error) {
+         throw new Error(data.error)
       }
 
       setFormData(prev => ({
         ...prev,
-        plant_species: parsed.scientific_name || prev.plant_species,
-        name: parsed.popular_name || prev.name,
-        ai_description: parsed.description || prev.ai_description,
-        category: parsed.category_id || prev.category
+        plant_species: data?.scientific_name || prev.plant_species,
+        name: data?.popular_name || prev.name,
+        ai_description: data?.description || prev.ai_description,
+        category: data?.category_id || prev.category
       }))
       
       toast.success('Informações geradas com IA!')
-    } catch (error) {
+    } catch (error: any) {
       console.error(error)
-      toast.error('Erro ao processar imagem com a IA')
+      toast.error(error?.message || 'Erro ao processar imagem com a IA')
     } finally {
       setIsGenerating(false)
     }

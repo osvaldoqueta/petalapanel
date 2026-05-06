@@ -11,6 +11,7 @@ const LoginPage = lazy(() => import('@/modules/auth/pages/LoginPage'))
 const BiDashboard = lazy(() => import('@/modules/bi/pages/BiDashboard'))
 const DesignSystemPage = lazy(() => import('@/modules/design-system/pages/DesignSystemPage'))
 const MerchantHubPage = lazy(() => import('@/modules/merchant/pages/MerchantHubPage'))
+const AdminPage = lazy(() => import('@/modules/admin/pages/AdminPage'))
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -45,7 +46,7 @@ export default function App() {
                 <Route path="bi" element={<ProtectedRoute minRole="Support"><BiDashboard /></ProtectedRoute>} />
                 <Route path="design-system" element={<ProtectedRoute minRole="Super User"><DesignSystemPage /></ProtectedRoute>} />
                 <Route path="merchant" element={<MerchantHubPage />} />
-                <Route path="moderation" element={<ProtectedRoute minRole="Support"><MerchantHubPage /></ProtectedRoute>} />
+                <Route path="admin" element={<ProtectedRoute minRole="Support"><AdminPage /></ProtectedRoute>} />
               </Route>
             </Routes>
           </Suspense>

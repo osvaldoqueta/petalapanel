@@ -52,8 +52,8 @@ const NAV_ITEMS: NavItem[] = [
     minRole: 'Seller',
   },
   {
-    label: 'Moderação',
-    path: '/moderation',
+    label: 'Administração',
+    path: '/admin',
     icon: <Shield className="h-5 w-5" />,
     minRole: 'Support',
   },
