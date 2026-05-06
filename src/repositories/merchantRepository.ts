@@ -107,6 +107,22 @@ export const merchantRepository = {
     return data as StoreInventory
   },
 
+  quickUpdateProduct: async (
+    storeId: string,
+    productId: string,
+    updates: { price?: number; stock_qty?: number }
+  ) => {
+    const { data, error } = await supabase
+      .from('store_inventory')
+      .update(updates)
+      .match({ id: productId, store_id: storeId })
+      .select()
+      .single()
+
+    if (error) throw error
+    return data as StoreInventory
+  },
+
   // ─── Campaigns ───────────────────────────────────────────────────────────
   getCampaigns: async (storeId: string | null) => {
     let query = supabase

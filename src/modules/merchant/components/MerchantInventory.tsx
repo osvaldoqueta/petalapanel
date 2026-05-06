@@ -10,6 +10,70 @@ import type { StoreInventory } from '@/shared/types'
 import { ConfirmDeleteModal } from '@/components/ConfirmDeleteModal'
 import { toast } from 'sonner'
 
+function InlineEditInput({ 
+  initialValue, 
+  onSave, 
+  type = 'number',
+  prefix = ''
+}: { 
+  initialValue: number | string; 
+  onSave: (val: string) => Promise<void>;
+  type?: 'number' | 'text';
+  prefix?: string;
+}) {
+  const [value, setValue] = useState(initialValue.toString())
+  const [isEditing, setIsEditing] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
+
+  const handleBlur = async () => {
+    setIsEditing(false)
+    if (value !== initialValue.toString()) {
+      setIsSaving(true)
+      try {
+        await onSave(value)
+      } catch {
+        setValue(initialValue.toString())
+      } finally {
+        setIsSaving(false)
+      }
+    }
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.currentTarget.blur()
+    }
+  }
+
+  return (
+    <div className="relative group flex items-center justify-center">
+      {isSaving && (
+        <div className="absolute inset-0 bg-surface-900/50 backdrop-blur-[1px] z-10 flex items-center justify-center rounded">
+          <Clock className="h-3 w-3 animate-spin text-petala-400" />
+        </div>
+      )}
+      <div className={cn(
+        "flex items-center gap-1 border-b border-transparent hover:border-surface-600 transition-colors px-1",
+        isEditing && "border-petala-500 bg-surface-800 rounded hover:border-petala-500"
+      )}>
+        {prefix && <span className={cn("text-xs", isEditing ? "text-petala-400" : "text-surface-500")}>{prefix}</span>}
+        <input
+          type={type}
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          onFocus={() => setIsEditing(true)}
+          onBlur={handleBlur}
+          onKeyDown={handleKeyDown}
+          className={cn(
+            "bg-transparent focus:outline-none text-center text-sm font-medium w-16",
+            isEditing ? "text-white" : "text-white"
+          )}
+        />
+      </div>
+    </div>
+  )
+}
+
 export function MerchantInventory() {
   const { storeId } = useStoreContext()
   const [searchTerm, setSearchTerm] = useState('')
@@ -132,15 +196,44 @@ export function MerchantInventory() {
                           )}
                           <div>
                             <p className="text-sm font-medium text-white truncate max-w-[200px]">{item.name}</p>
-                            {item.is_promoted && (
-                              <span className="text-[9px] bg-accent-blue/10 text-accent-blue px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">Patrocinado</span>
-                            )}
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {item.is_promoted && (
+                                <span className="text-[9px] bg-accent-blue/10 text-accent-blue px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">Patrocinado</span>
+                              )}
+                              {item.is_flash_sale && (
+                                <span className="text-[9px] bg-accent-rose/10 text-accent-rose px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">Oferta Relâmpago</span>
+                              )}
+                              {item.discount_percent && item.discount_percent > 0 ? (
+                                <span className="text-[9px] bg-[#FBBF24]/10 text-[#FBBF24] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">-{item.discount_percent}% OFF</span>
+                              ) : null}
+                            </div>
                           </div>
                         </div>
                       </td>
                       <td className="px-4 py-3 text-sm text-surface-300 italic">{item.plant_species}</td>
-                      <td className="px-4 py-3 text-sm font-medium text-white">{formatCurrency(item.price)}</td>
-                      <td className="px-4 py-3 text-center text-sm font-medium text-white">{item.stock_qty || 0}</td>
+                      <td className="px-4 py-3">
+                        <InlineEditInput 
+                          initialValue={item.price} 
+                          prefix="R$"
+                          onSave={async (val) => {
+                            if (!storeId) return
+                            await merchantRepository.quickUpdateProduct(storeId, item.id, { price: Number(val) })
+                            toast.success('Preço atualizado')
+                            refetch()
+                          }} 
+                        />
+                      </td>
+                      <td className="px-4 py-3">
+                        <InlineEditInput 
+                          initialValue={item.stock_qty || 0} 
+                          onSave={async (val) => {
+                            if (!storeId) return
+                            await merchantRepository.quickUpdateProduct(storeId, item.id, { stock_qty: Number(val) })
+                            toast.success('Estoque atualizado')
+                            refetch()
+                          }} 
+                        />
+                      </td>
                       <td className="px-4 py-3 text-center">
                         <span className={cn(
                           "px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider",
