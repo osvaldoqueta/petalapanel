@@ -55,8 +55,17 @@ export const merchantRepository = {
       plant_species: string
       price: number
       weight_kg: number
+      stock_qty?: number
       image_url: string
       video_url: string
+      ai_description?: string
+      is_active?: boolean
+      original_price?: number | null
+      discount_percent?: number | null
+      is_flash_sale?: boolean
+      flash_sale_ends_at?: string | null
+      category?: string | null
+      subcategory?: string | null
     }
   ) => {
     const payload: any = {
@@ -65,8 +74,17 @@ export const merchantRepository = {
       plant_species: productData.plant_species,
       price: productData.price,
       weight_kg: productData.weight_kg,
+      stock_qty: productData.stock_qty || 0,
       image_url: productData.image_url,
       video_url: productData.video_url || null,
+      ai_description: productData.ai_description || null,
+      is_active: productData.is_active ?? true,
+      original_price: productData.original_price || null,
+      discount_percent: productData.discount_percent || null,
+      is_flash_sale: productData.is_flash_sale ?? false,
+      flash_sale_ends_at: productData.flash_sale_ends_at || null,
+      category: productData.category || null,
+      subcategory: productData.subcategory || null,
     }
 
     // If there's a video, and we are updating or creating, set to pending if changed.

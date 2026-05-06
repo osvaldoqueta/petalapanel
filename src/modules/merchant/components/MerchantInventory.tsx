@@ -77,26 +77,31 @@ export function MerchantInventory() {
       ) : (
         <div className="glass rounded-2xl overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[800px]">
+            <table className="w-full min-w-[900px]">
               <thead>
                 <tr className="border-b border-surface-800/50 bg-surface-900/20">
                   <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-widest text-surface-500">Produto</th>
                   <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-widest text-surface-500">Espécie</th>
                   <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-widest text-surface-500">Preço</th>
-                  <th className="px-4 py-3 text-center text-[10px] font-semibold uppercase tracking-widest text-surface-500">Status Moderação</th>
+                  <th className="px-4 py-3 text-center text-[10px] font-semibold uppercase tracking-widest text-surface-500">Estoque</th>
+                  <th className="px-4 py-3 text-center text-[10px] font-semibold uppercase tracking-widest text-surface-500">Status</th>
+                  <th className="px-4 py-3 text-center text-[10px] font-semibold uppercase tracking-widest text-surface-500">Vídeo IA</th>
                   <th className="px-4 py-3 text-right text-[10px] font-semibold uppercase tracking-widest text-surface-500">Ações</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-surface-800/20">
                 {filteredInventory.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-4 py-12 text-center text-surface-400">
+                    <td colSpan={7} className="px-4 py-12 text-center text-surface-400">
                       Nenhum produto encontrado.
                     </td>
                   </tr>
                 ) : (
                   filteredInventory.map((item) => (
-                    <tr key={item.id} className="hover:bg-surface-800/20 transition-colors">
+                    <tr key={item.id} className={cn(
+                      "hover:bg-surface-800/20 transition-colors",
+                      !item.is_active && "opacity-60 grayscale"
+                    )}>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
                           {item.image_url ? (
@@ -114,6 +119,15 @@ export function MerchantInventory() {
                       </td>
                       <td className="px-4 py-3 text-sm text-surface-300 italic">{item.plant_species}</td>
                       <td className="px-4 py-3 text-sm font-medium text-white">{formatCurrency(item.price)}</td>
+                      <td className="px-4 py-3 text-center text-sm font-medium text-white">{item.stock_qty || 0}</td>
+                      <td className="px-4 py-3 text-center">
+                        <span className={cn(
+                          "px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider",
+                          item.is_active ? "bg-petala-500/10 text-petala-400" : "bg-surface-800 text-surface-500"
+                        )}>
+                          {item.is_active ? 'Ativo' : 'Inativo'}
+                        </span>
+                      </td>
                       <td className="px-4 py-3 text-center">
                         {item.video_url ? (
                           <div className="flex items-center justify-center gap-1.5" title={item.video_moderation_reason || ''}>
@@ -128,7 +142,7 @@ export function MerchantInventory() {
                             </span>
                           </div>
                         ) : (
-                          <span className="text-xs text-surface-500">Sem vídeo</span>
+                          <span className="text-xs text-surface-500">N/A</span>
                         )}
                       </td>
                       <td className="px-4 py-3 text-right">

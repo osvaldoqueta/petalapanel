@@ -49,10 +49,12 @@ export interface StoreInventory {
   plant_species?: string
   price: number
   weight_kg?: number
+  stock_qty?: number
   original_price: number | null
   discount_percent: number | null
   image_url: string | null
   video_url: string | null
+  ai_description?: string | null
   video_moderation_status: 'pending' | 'approved' | 'rejected' | null
   video_moderation_reason: string | null
   is_active: boolean

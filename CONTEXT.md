@@ -242,5 +242,13 @@ Durante os testes de produção, descobrimos que a estrutura do Petala App difer
 - [x] **Ads & Campaign Manager (`AdsManager`):** Introdução do portal de criação de anúncios. O Lojista cria campanhas com budget e CPC personalizados, e na mesma tela, anexa seus produtos orgânicos que imediatamente recebem `is_promoted = true` no app nativo. A tela inclui um gráfico BarChart (Private BI) isolado.
 - [x] **Performance UI/UX (Np1):** A navegação dentro do Hub entre Dashboard / Inventário / Marketing agora utiliza o `startTransition` do React 18, garantindo alternância das views pesadas com INP inferior a 100ms e preservando estado de cache via TanStack Query.
 
+### ✨ Sprint 3.1 — Formulário de Produto (Paridade App Nativo) (2026-05-05)
+
+**Objetivo:** Refatorar a UI de edição/criação de produtos no Merchant Hub para total fidelidade aos recursos do Mobile App, garantindo escalabilidade de dados sem ferir o padrão Np1 de isolamento de *tenant*.
+
+- [x] **Upload Nativo e Storage:** Substituição do campo "URL de Imagem" por uma Dropzone de upload direto. Implementação do `supabase.storage.from('plant-images').upload()`, assegurando *Public URLs* transparentes.
+- [x] **Paridade de Estrutura de Dados:** Expansão da interface `StoreInventory` e do `upsertProduct` em `merchantRepository.ts` para ingerir novos campos críticos: Categoria, Subcategoria, Estoque (`stock_qty`), Preço Promocional, `ai_description` e flags de Oferta Relâmpago (`is_flash_sale`). Tudo operando dentro do boundary seguro de `storeId`.
+- [x] **Engine Promocional:** Implementação visual e lógica para inserção de "Preço Original" calculando automaticamente no envio o `discount_percent` ao repositório, garantindo compatibilidade retroativa com os badges do aplicativo ("Oferta").
+
 *Atualizar este arquivo após cada sprint com novas decisões e alterações.*
 
