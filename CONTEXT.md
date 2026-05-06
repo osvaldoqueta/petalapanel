@@ -282,5 +282,23 @@ Durante os testes de produção, descobrimos que a estrutura do Petala App difer
 - `src/components/Skeleton.tsx` — QACardSkeleton
 - `.env.example` — VITE_GEMINI_API_KEY
 
-*Atualizar este arquivo após cada sprint com novas decisões e alterações.*
+### 🛡️ Sprint 5.0 — SuperAdmin Command Center (2026-05-06)
 
+**Objetivo:** Modernizar a governança da plataforma com foco na equipe interna (Super User e Support), isolando lógicas de alteração de papéis, moderação global e controle financeiro.
+
+- [x] **Gestão de Usuários (UserManagement):** Tabela administrativa que lê `public.profiles` cruzado com `public.roles`. Alteração de permissão via modal com persistência via `adminRepository.ts` (Service Role Key) para bypass de RLS seguro e imediato.
+- [x] **Moderação Global:** Painel dedicado para `video_moderation_status = 'pending'`. Aprovação ou rejeição de produtos com obrigação de preenchimento do motivo, enviando notificação de push local ao vendedor correspondente via `system_notifications`.
+- [x] **Configurações do Marketplace:** Controle centralizado de `store_fee_percentage` e `courier_fee_percentage`, com cálculo dinâmico da margem de lucro projetada para a plataforma.
+- [x] **BI Financeiro Expandido:** Adoção rigorosa de filtros `payment_status = 'paid'`. O painel `BiDashboard` passou a espelhar GTV vs Receita Líquida (`platform_fee`), fornecendo clareza sobre o faturamento real.
+- [x] **Zero CLS & Correções:** Adicionados `UserTableSkeleton` e `ModerationCardSkeleton`. Correção do bug de sumiço de Q&A alterando o `!inner join` para `left join` na tabela de inventário.
+
+### 📊 Sprint 6.0 — Central de Relatórios e Alertas de Elite (2026-05-06)
+
+**Objetivo:** Fortalecer o ecossistema com geração avançada de relatórios PDF na ponta do Lojista e instituir monitoramento High Alert no painel do administrador.
+
+- [x] **Motor de PDF Local (Zero INP):** Geração do relatório de "Vendas do Dia" via biblioteca `jsPDF` inteiramente no lado do cliente. Operação englobada por `startTransition` assegurando UI responsiva e download instantâneo de um documento estilizado.
+- [x] **Agendamento Multi-tenant:** Integração de `react-hook-form` e `zod` para criar um seletor amigável de horários e dias da semana. Migração `report_schedules` criada com RLS atrelando rigorosamente cada agendamento ao `auth.uid()`.
+- [x] **Monitoramento Nível 4 (High Alert):** Ampliação do `DashboardLayout.tsx` para interceptar eventos globais via Supabase Realtime tanto em `INSERT` quanto `UPDATE`. Se o `payment_status` de uma venda virar 'paid' e exceder $1000, um Toast ambar exclusivo com alerta sonoro e click handler desponta na tela.
+- [x] **Auditoria Completa:** Gravação minuciosa no `app_logs` de todas as vezes que um PDF for extraído ou o agendamento for configurado.
+
+*Atualizar este arquivo após cada sprint com novas decisões e alterações.*
