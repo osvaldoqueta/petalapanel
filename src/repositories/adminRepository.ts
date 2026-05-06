@@ -169,4 +169,74 @@ export const adminRepository = {
     if (error) throw error
     return data || []
   },
+
+  // ─── Broadcast ──────────────────────────────────────────────────────────────
+  createBroadcast: async (payload: {
+    title: string
+    body: string
+    target_audience: string
+    action_url?: string
+    channel?: string
+  }) => {
+    const { data, error } = await supabaseAdmin
+      .from('admin_broadcasts')
+      .insert({
+        title: payload.title,
+        body: payload.body,
+        target_audience: payload.target_audience,
+        action_url: payload.action_url || null,
+        channel: payload.channel || 'in_app',
+      })
+      .select()
+      .single()
+
+    if (error) throw error
+    return data
+  },
+
+  getEstimatedReach: async (audience: string): Promise<number> => {
+    if (audience === 'all') {
+      const { count, error } = await supabaseAdmin
+        .from('profiles')
+        .select('*', { count: 'exact', head: true })
+      if (error) throw error
+      return count || 0
+    }
+
+    // Filter by role name
+    const roleName = audience === 'sellers' ? 'Seller' : 'Courier'
+    const { data: role } = await supabaseAdmin
+      .from('roles')
+      .select('id')
+      .eq('name', roleName)
+      .single()
+
+    if (!role) return 0
+
+    const { count, error } = await supabaseAdmin
+      .from('profiles')
+      .select('*', { count: 'exact', head: true })
+      .eq('role_id', role.id)
+
+    if (error) throw error
+    return count || 0
+  },
+
+  // ─── Performance / CWV ──────────────────────────────────────────────────────
+  getPerformanceLogs: async (days: number = 7) => {
+    const since = new Date()
+    since.setDate(since.getDate() - days)
+
+    const { data, error } = await supabaseAdmin
+      .from('app_logs')
+      .select('*')
+      .eq('source', 'cwv')
+      .eq('level', 'metric')
+      .gte('created_at', since.toISOString())
+      .order('created_at', { ascending: true })
+      .limit(2000)
+
+    if (error) throw error
+    return data || []
+  },
 }

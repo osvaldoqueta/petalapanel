@@ -7,7 +7,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { merchantRepository } from '@/repositories/merchantRepository'
-import { useStoreContext } from '@/modules/merchant/hooks/useStoreContext'
+import { useStoreContext } from '@/modules/merchant/context/StoreContext'
 import { useAuth } from '@/modules/auth/hooks/useAuth'
 import { useAuditLog } from '@/hooks/useAuditLog'
 import { supabase } from '@/integrations/supabase/client'

@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { merchantRepository } from '@/repositories/merchantRepository'
-import { useStoreContext } from '@/modules/merchant/hooks/useStoreContext'
+import { useStoreContext } from '@/modules/merchant/context/StoreContext'
 import { useAuditLog } from '@/hooks/useAuditLog'
 import { TableSkeleton } from '@/components/Skeleton'
 import { ProductFormModal } from '@/modules/merchant/components/ProductFormModal'

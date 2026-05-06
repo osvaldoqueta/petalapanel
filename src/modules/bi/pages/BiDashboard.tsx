@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client'
 import { MetricCard } from '@/modules/bi/components/MetricCard'
 import { SalesChart } from '@/modules/bi/components/SalesChart'
 import { VideoEngagementChart } from '@/modules/bi/components/VideoEngagementChart'
+import { PerformanceHub } from '@/modules/bi/components/PerformanceHub'
 import { BiFilters } from '@/modules/bi/components/BiFilters'
 import { formatCurrency, formatCompact } from '@/lib/utils'
 import { DollarSign, ShoppingCart, TrendingUp, Video } from 'lucide-react'
@@ -211,6 +212,9 @@ export default function BiDashboard() {
         <SalesChart filters={filters} />
         <VideoEngagementChart filters={filters} />
       </div>
+
+      {/* Performance Hub (CWV) */}
+      <PerformanceHub />
     </div>
   )
 }

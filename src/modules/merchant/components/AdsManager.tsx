@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { merchantRepository } from '@/repositories/merchantRepository'
-import { useStoreContext } from '@/modules/merchant/hooks/useStoreContext'
+import { useStoreContext } from '@/modules/merchant/context/StoreContext'
 import { CampaignTable } from '@/modules/merchant/components/CampaignTable'
 import { CampaignFormModal } from '@/modules/merchant/components/CampaignFormModal'
 import { Plus, Megaphone, Activity } from 'lucide-react'

@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Toaster } from 'sonner'
 import { AuthProvider } from '@/modules/auth/hooks/useAuth'
 import { ProtectedRoute } from '@/modules/auth/components/ProtectedRoute'
+import { StoreProvider } from '@/modules/merchant/context/StoreContext'
 import { DashboardLayout } from '@/components/DashboardLayout'
 import { lazy, Suspense } from 'react'
 
@@ -41,7 +42,7 @@ export default function App() {
               <Route path="/login" element={<LoginPage />} />
 
               {/* Protected Dashboard */}
-              <Route element={<ProtectedRoute minRole="Seller"><DashboardLayout /></ProtectedRoute>}>
+              <Route element={<ProtectedRoute minRole="Seller"><StoreProvider><DashboardLayout /></StoreProvider></ProtectedRoute>}>
                 <Route index element={<ProtectedRoute minRole="Support"><BiDashboard /></ProtectedRoute>} />
                 <Route path="bi" element={<ProtectedRoute minRole="Support"><BiDashboard /></ProtectedRoute>} />
                 <Route path="design-system" element={<ProtectedRoute minRole="Super User"><DesignSystemPage /></ProtectedRoute>} />

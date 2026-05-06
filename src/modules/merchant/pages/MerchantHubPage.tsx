@@ -9,19 +9,19 @@ import { CampaignTable } from '@/modules/merchant/components/CampaignTable'
 import { ModerationPanel } from '@/modules/merchant/components/ModerationPanel'
 import { MerchantKPIs } from '@/modules/merchant/components/MerchantKPIs'
 import { InventoryHealth } from '@/modules/merchant/components/InventoryHealth'
-import { useStoreContext } from '@/modules/merchant/hooks/useStoreContext'
+import { useStoreContext } from '@/modules/merchant/context/StoreContext'
 import { MerchantInventory } from '@/modules/merchant/components/MerchantInventory'
 import { AdsManager } from '@/modules/merchant/components/AdsManager'
 import { MerchantSupport } from '@/modules/merchant/components/MerchantSupport'
 import { MerchantReports } from '@/modules/merchant/components/MerchantReports'
 import { merchantRepository } from '@/repositories/merchantRepository'
-import { Store, LayoutDashboard, Package, Megaphone, MessageCircleQuestion, FileText } from 'lucide-react'
+import { Store, LayoutDashboard, Package, Megaphone, MessageCircleQuestion, FileText, ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 type Tab = 'dashboard' | 'inventory' | 'marketing' | 'support' | 'reports'
 
 export default function MerchantHubPage() {
-  const { storeId, storeName, isOwner } = useStoreContext()
+  const { storeId, storeName, isOwner, stores, setActiveStore } = useStoreContext()
   const [activeTab, setActiveTab] = useState<Tab>('dashboard')
   const [isPending, startTransition] = useTransition()
 
@@ -30,7 +30,7 @@ export default function MerchantHubPage() {
     queryKey: ['merchant-unanswered-count', storeId],
     queryFn: () => merchantRepository.getUnansweredCount(storeId),
     enabled: !!storeId,
-    refetchInterval: 60_000, // Poll every 60s as fallback to realtime
+    refetchInterval: 60_000,
     staleTime: 30_000,
   })
 
@@ -48,9 +48,26 @@ export default function MerchantHubPage() {
             <Store className="h-5 w-5" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-white tracking-tight">
-              {isOwner ? storeName || 'Minha Loja' : 'Merchant Hub'}
-            </h1>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-bold text-white tracking-tight">
+                {isOwner ? storeName || 'Minha Loja' : 'Merchant Hub'}
+              </h1>
+              {/* Multi-Store Switcher */}
+              {stores.length > 1 && (
+                <div className="relative">
+                  <select
+                    value={storeId || ''}
+                    onChange={e => setActiveStore(e.target.value)}
+                    className="appearance-none bg-surface-800 border border-surface-700 rounded-lg py-1 pl-3 pr-7 text-xs text-surface-300 font-medium cursor-pointer hover:border-petala-500/50 focus:outline-none focus:border-petala-500 transition-colors"
+                  >
+                    {stores.map(s => (
+                      <option key={s.id} value={s.id}>{s.name}</option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-3 w-3 text-surface-500 pointer-events-none" />
+                </div>
+              )}
+            </div>
             <p className="text-sm text-surface-400 mt-0.5">
               {isOwner
                 ? 'Métricas, campanhas e moderação da sua loja'

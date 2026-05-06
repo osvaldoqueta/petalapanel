@@ -301,4 +301,27 @@ Durante os testes de produção, descobrimos que a estrutura do Petala App difer
 - [x] **Monitoramento Nível 4 (High Alert):** Ampliação do `DashboardLayout.tsx` para interceptar eventos globais via Supabase Realtime tanto em `INSERT` quanto `UPDATE`. Se o `payment_status` de uma venda virar 'paid' e exceder $1000, um Toast ambar exclusivo com alerta sonoro e click handler desponta na tela.
 - [x] **Auditoria Completa:** Gravação minuciosa no `app_logs` de todas as vezes que um PDF for extraído ou o agendamento for configurado.
 
+### 🌐 Sprint 7.0 — Broadcast, Observabilidade e Context Switcher (2026-05-06)
+
+**Objetivo:** Implementar o Centro de Comunicação Global (Broadcast), o Dashboard de Observabilidade (CWV), e o Seletor de Contexto Multi-Store para lojistas com múltiplas lojas.
+
+- [x] **Centro de Transmissão Global (`AdminBroadcast.tsx`):** Nova aba "Comunicação" no módulo Admin. Interface com seletores de audiência ("Todos", "Lojistas", "Entregadores"), composição de mensagem, canal (In-App/Email/Ambos) e URL de ação. O botão "Enviar Broadcast" insere na tabela `admin_broadcasts` (já existente com Realtime habilitado) e estima o alcance via contagem real de profiles.
+- [x] **Dashboard de Observabilidade CWV (`PerformanceHub.tsx`):** Integrado como sub-seção do BiDashboard. Consome `app_logs` onde `source = 'cwv'` e `level = 'metric'`. Exibe gráficos LineChart (Recharts) para LCP, INP e CLS com Reference Lines para thresholds Google (Good/Poor). Inclui filtro de conexão (4G/Wi-Fi) e dispositivos lentos (<4GB RAM). Scorecard P75 com cores semafóricas.
+- [x] **Multi-Store Switcher:** Hook `useStoreContext` transformado em `StoreProvider` (React Context Provider). Busca *todas* as lojas do owner. Se `stores.length > 1`, exibe dropdown no header do Merchant Hub. Ao trocar, todos os dados (Inventário, BI, Suporte) refetcham automaticamente via TanStack Query key dependency.
+- [x] **Refatoração de Imports:** Todos os consumidores de `useStoreContext` foram migrados de `@/modules/merchant/hooks/useStoreContext` para `@/modules/merchant/context/StoreContext`.
+- [x] **Audit Logging:** Broadcast registra ação `create_broadcast` com alcance estimado em `app_logs`.
+
+**Arquivos criados:**
+- `src/modules/merchant/context/StoreContext.tsx` — StoreProvider + useStoreContext hook
+- `src/modules/admin/components/AdminBroadcast.tsx` — Centro de Transmissão Global
+- `src/modules/bi/components/PerformanceHub.tsx` — Dashboard CWV
+
+**Arquivos modificados:**
+- `src/App.tsx` — StoreProvider envolvendo DashboardLayout
+- `src/repositories/adminRepository.ts` — createBroadcast, getEstimatedReach, getPerformanceLogs
+- `src/modules/admin/pages/AdminPage.tsx` — Tab "Comunicação" adicionada
+- `src/modules/bi/pages/BiDashboard.tsx` — Seção PerformanceHub integrada
+- `src/modules/merchant/pages/MerchantHubPage.tsx` — StoreSwitcher no header
+- `src/modules/merchant/components/*.tsx` — Imports migrados para StoreContext
+
 *Atualizar este arquivo após cada sprint com novas decisões e alterações.*
