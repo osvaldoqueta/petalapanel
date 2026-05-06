@@ -179,5 +179,40 @@ export const merchantRepository = {
       store_name: i.stores?.store_name || 'Loja',
       created_at: String(i.created_at),
     }))
+  },
+
+  // ─── Categories ────────────────────────────────────────────────────────
+  getCategories: async () => {
+    const { data, error } = await supabase
+      .from('app_categories')
+      .select('*')
+      .order('label', { ascending: true })
+    
+    if (error) throw error
+    return data
+  },
+
+  getSubcategories: async (categoryId: string) => {
+    if (!categoryId) return []
+    const { data, error } = await supabase
+      .from('app_subcategories')
+      .select('*')
+      .eq('category_id', categoryId)
+      .order('label', { ascending: true })
+    
+    if (error) throw error
+    return data
+  },
+
+  // ─── Actions ───────────────────────────────────────────────────────────
+  deleteProduct: async (storeId: string, productId: string) => {
+    // Np1 security boundary: ensure storeId matches
+    const { error } = await supabase
+      .from('store_inventory')
+      .delete()
+      .match({ id: productId, store_id: storeId })
+    
+    if (error) throw error
+    return true
   }
 }

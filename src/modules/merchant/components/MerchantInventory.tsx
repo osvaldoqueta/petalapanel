@@ -4,15 +4,20 @@ import { merchantRepository } from '@/repositories/merchantRepository'
 import { useStoreContext } from '@/modules/merchant/hooks/useStoreContext'
 import { TableSkeleton } from '@/components/Skeleton'
 import { ProductFormModal } from '@/modules/merchant/components/ProductFormModal'
-import { Plus, Search, Edit2, AlertTriangle, Clock, CheckCircle } from 'lucide-react'
+import { Plus, Search, Edit2, AlertTriangle, Clock, CheckCircle, Trash2 } from 'lucide-react'
 import { cn, formatCurrency } from '@/lib/utils'
 import type { StoreInventory } from '@/shared/types'
+import { ConfirmDeleteModal } from '@/components/ConfirmDeleteModal'
+import { toast } from 'sonner'
 
 export function MerchantInventory() {
   const { storeId } = useStoreContext()
   const [searchTerm, setSearchTerm] = useState('')
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingProduct, setEditingProduct] = useState<StoreInventory | null>(null)
+  
+  const [productToDelete, setProductToDelete] = useState<StoreInventory | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   const { data: inventory, isLoading, refetch } = useQuery<StoreInventory[]>({
     queryKey: ['merchant-inventory', storeId],
@@ -46,6 +51,22 @@ export function MerchantInventory() {
     if (status === 'rejected') return <AlertTriangle className="h-4 w-4 text-accent-rose" />
     if (status === 'pending') return <Clock className="h-4 w-4 text-accent-amber" />
     return null
+  }
+
+  const handleDelete = async () => {
+    if (!productToDelete || !storeId) return
+    setIsDeleting(true)
+    try {
+      await merchantRepository.deleteProduct(storeId, productToDelete.id)
+      toast.success('Produto excluído com sucesso')
+      refetch()
+    } catch (error) {
+      console.error(error)
+      toast.error('Erro ao excluir produto')
+    } finally {
+      setIsDeleting(false)
+      setProductToDelete(null)
+    }
   }
 
   return (
@@ -146,12 +167,22 @@ export function MerchantInventory() {
                         )}
                       </td>
                       <td className="px-4 py-3 text-right">
-                        <button
-                          onClick={() => openEditModal(item)}
-                          className="p-2 text-surface-400 hover:text-white hover:bg-surface-800/50 rounded-xl transition-all"
-                        >
-                          <Edit2 className="h-4 w-4" />
-                        </button>
+                        <div className="flex justify-end gap-1">
+                          <button
+                            onClick={() => openEditModal(item)}
+                            className="p-2 text-surface-400 hover:text-white hover:bg-surface-800/50 rounded-xl transition-all"
+                            title="Editar"
+                          >
+                            <Edit2 className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => setProductToDelete(item)}
+                            className="p-2 text-surface-400 hover:text-accent-rose hover:bg-accent-rose/10 rounded-xl transition-all"
+                            title="Excluir"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))
@@ -172,6 +203,16 @@ export function MerchantInventory() {
           onSuccess={() => refetch()}
         />
       )}
+
+      {/* Delete Confirmation */}
+      <ConfirmDeleteModal
+        isOpen={!!productToDelete}
+        title="Excluir Produto"
+        description={`Tem certeza que deseja excluir "${productToDelete?.name}"? Esta ação não pode ser desfeita.`}
+        onConfirm={handleDelete}
+        onCancel={() => setProductToDelete(null)}
+        isDeleting={isDeleting}
+      />
     </div>
   )
 }

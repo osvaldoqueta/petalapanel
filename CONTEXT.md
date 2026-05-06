@@ -250,5 +250,12 @@ Durante os testes de produção, descobrimos que a estrutura do Petala App difer
 - [x] **Paridade de Estrutura de Dados:** Expansão da interface `StoreInventory` e do `upsertProduct` em `merchantRepository.ts` para ingerir novos campos críticos: Categoria, Subcategoria, Estoque (`stock_qty`), Preço Promocional, `ai_description` e flags de Oferta Relâmpago (`is_flash_sale`). Tudo operando dentro do boundary seguro de `storeId`.
 - [x] **Engine Promocional:** Implementação visual e lógica para inserção de "Preço Original" calculando automaticamente no envio o `discount_percent` ao repositório, garantindo compatibilidade retroativa com os badges do aplicativo ("Oferta").
 
-*Atualizar este arquivo após cada sprint com novas decisões e alterações.*
+### ✨ Sprint 3.2 — Sistema de Categorias Dinâmico e Integração de IA (2026-05-06)
 
+**Objetivo:** Eliminar hardcodings do sistema de inventário puxando Categorias via banco de dados, implementar a inteligência artificial Gemini para preenchimento de metadados, e padronizar as ações destrutivas (exclusão).
+
+- [x] **Database Migration & RLS:** Criação oficial das tabelas `app_categories` e `app_subcategories` na instância central do Supabase, substituindo os arrays estáticos da aplicação e permitindo expansão dinâmica do portfólio.
+- [x] **Gemini AI Integration (IA Copy):** Implementação segura (client-side via env vars) da chamada ao modelo Gemini 2.0 Flash. O sistema lê o Base64 da imagem já enviada ao Supabase Storage e gera de forma autônoma: Nome Científico, Nome Popular, Categoria ideal e Descrição de Vendas persuasiva, com injeção direta no formulário do produto (`ProductFormModal.tsx`).
+- [x] **Ação de Exclusão Glassmorphism:** Criação do componente isolado `ConfirmDeleteModal.tsx` com micro-interações, estados de *loading*, e botão "Destructive". Integração do ciclo completo (State -> API -> Invalidação de Cache TanStack) na tabela principal de `MerchantInventory`.
+
+*Atualizar este arquivo após cada sprint com novas decisões e alterações.*

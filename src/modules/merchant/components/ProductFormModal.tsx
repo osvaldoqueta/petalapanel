@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { X, AlertTriangle, UploadCloud, Video, Leaf, DollarSign, Weight, Tag, Image as ImageIcon, Sparkles, Clock, Calendar } from 'lucide-react'
 import { merchantRepository } from '@/repositories/merchantRepository'
 import { supabase } from '@/integrations/supabase/client'
@@ -14,13 +15,18 @@ interface ProductFormModalProps {
   onSuccess: () => void
 }
 
-const CATEGORIES = ['Plantas', 'Acessórios', 'Kits', 'Sementes']
-const SUBCATEGORIES = ['Interior', 'Exterior', 'Suculentas', 'Vasos', 'Fertilizantes']
-
 export function ProductFormModal({ storeId, product, isOpen, onClose, onSuccess }: ProductFormModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
+  const [isGenerating, setIsGenerating] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  
+  // ─── Categories ───
+  const { data: categories = [] } = useQuery({
+    queryKey: ['categories'],
+    queryFn: merchantRepository.getCategories,
+    enabled: isOpen
+  })
   
   const [formData, setFormData] = useState({
     name: product?.name || '',
@@ -38,6 +44,12 @@ export function ProductFormModal({ storeId, product, isOpen, onClose, onSuccess 
     flash_sale_ends_at: product?.flash_sale_ends_at ? new Date(product.flash_sale_ends_at).toISOString().slice(0, 16) : '',
     image_url: product?.image_url || '',
     video_url: product?.video_url || '',
+  })
+
+  const { data: subcategories = [] } = useQuery({
+    queryKey: ['subcategories', formData.category],
+    queryFn: () => merchantRepository.getSubcategories(formData.category),
+    enabled: !!formData.category && isOpen
   })
 
   if (!isOpen) return null
@@ -70,6 +82,77 @@ export function ProductFormModal({ storeId, product, isOpen, onClose, onSuccess 
     } finally {
       setIsUploading(false)
       if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
+
+  // ─── Gemini IA Copy + Identificar ───
+  const handleIACopy = async () => {
+    if (!formData.image_url) {
+      toast.error('Adicione uma foto primeiro para a IA analisar')
+      return
+    }
+
+    const apiKey = import.meta.env.VITE_GEMINI_API_KEY
+    if (!apiKey) {
+      toast.error('Chave do Gemini não configurada')
+      return
+    }
+
+    setIsGenerating(true)
+    try {
+      const resImg = await fetch(formData.image_url)
+      const blob = await resImg.blob()
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = () => resolve((reader.result as string).split(',')[1])
+        reader.onerror = reject
+        reader.readAsDataURL(blob)
+      })
+
+      const categoriesInfo = categories.map((c: any) => c.id).join(', ')
+
+      const prompt = `Você é um especialista em identificação de produtos e copywriter profissional para o marketplace Pétala (Brasil).
+Analise esta imagem de produto. O produto pode ser uma planta, flor, insumo, ferramenta, vaso, etc.
+
+Responda APENAS com um JSON válido, sem markdown, exatamente neste formato:
+{
+  "scientific_name": "Nome científico ou técnico completo do produto",
+  "popular_name": "Nome popular mais usado no Brasil para este produto",
+  "description": "Descrição de vendas irresistível de 2-3 frases. Seja poético, evocativo. Foque nos benefícios emocionais e visuais.",
+  "category_id": "O ID da categoria mais adequada desta lista: ${categoriesInfo || 'plantas, flores, acessórios, ferramentas, insumos, sementes, vasos, diversos'}"
+}`
+
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }, { inline_data: { mime_type: blob.type || 'image/jpeg', data: base64 } }] }],
+          generationConfig: { temperature: 0.7 }
+        })
+      })
+
+      if (!res.ok) throw new Error('Falha na API da IA')
+      
+      const data = await res.json()
+      const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || ''
+      
+      let cleanText = rawText.replace(/^```json\s*/im, '').replace(/^```\s*/im, '').replace(/\s*```\s*$/im, '').trim()
+      const parsed = JSON.parse(cleanText)
+
+      setFormData(prev => ({
+        ...prev,
+        plant_species: parsed.scientific_name || prev.plant_species,
+        name: parsed.popular_name || prev.name,
+        ai_description: parsed.description || prev.ai_description,
+        category: parsed.category_id || prev.category
+      }))
+      
+      toast.success('Informações geradas com IA!')
+    } catch (error) {
+      console.error(error)
+      toast.error('Erro ao processar imagem com a IA')
+    } finally {
+      setIsGenerating(false)
     }
   }
 
@@ -233,11 +316,11 @@ export function ProductFormModal({ storeId, product, isOpen, onClose, onSuccess 
               <select
                 required
                 value={formData.category}
-                onChange={e => setFormData({ ...formData, category: e.target.value })}
+                onChange={e => setFormData({ ...formData, category: e.target.value, subcategory: '' })}
                 className="w-full bg-surface-900 border border-surface-700 rounded-xl py-3 px-4 text-sm text-white focus:outline-none focus:border-petala-500 focus:ring-1 focus:ring-petala-500 transition-all appearance-none"
               >
                 <option value="" disabled>Selecione a categoria</option>
-                {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                {categories.map((c: any) => <option key={c.id} value={c.id}>{c.label}</option>)}
               </select>
             </div>
 
@@ -248,10 +331,11 @@ export function ProductFormModal({ storeId, product, isOpen, onClose, onSuccess 
                 required
                 value={formData.subcategory}
                 onChange={e => setFormData({ ...formData, subcategory: e.target.value })}
-                className="w-full bg-surface-900 border border-surface-700 rounded-xl py-3 px-4 text-sm text-white focus:outline-none focus:border-petala-500 focus:ring-1 focus:ring-petala-500 transition-all appearance-none"
+                disabled={!formData.category}
+                className="w-full bg-surface-900 border border-surface-700 rounded-xl py-3 px-4 text-sm text-white focus:outline-none focus:border-petala-500 focus:ring-1 focus:ring-petala-500 transition-all appearance-none disabled:opacity-50"
               >
                 <option value="" disabled>Selecione a subcategoria</option>
-                {SUBCATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                {subcategories.map((c: any) => <option key={c.id} value={c.id}>{c.label}</option>)}
               </select>
             </div>
           </div>
@@ -310,9 +394,18 @@ export function ProductFormModal({ storeId, product, isOpen, onClose, onSuccess 
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <label className="text-sm font-bold text-white">Descrição de Venda</label>
-              <button type="button" className="flex items-center gap-1.5 text-xs font-medium text-[#C084FC] hover:brightness-125 transition-all">
-                <Sparkles className="h-3.5 w-3.5" />
-                IA Copy + Identificar
+              <button 
+                type="button" 
+                onClick={handleIACopy}
+                disabled={isGenerating}
+                className="flex items-center gap-1.5 text-xs font-medium text-[#C084FC] hover:brightness-125 transition-all disabled:opacity-50"
+              >
+                {isGenerating ? (
+                  <div className="h-3.5 w-3.5 border-[1.5px] border-[#C084FC]/30 border-t-[#C084FC] rounded-full animate-spin" />
+                ) : (
+                  <Sparkles className="h-3.5 w-3.5" />
+                )}
+                {isGenerating ? 'Analisando...' : 'IA Copy + Identificar'}
               </button>
             </div>
             <textarea
