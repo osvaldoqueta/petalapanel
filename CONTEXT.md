@@ -325,3 +325,32 @@ Durante os testes de produção, descobrimos que a estrutura do Petala App difer
 - `src/modules/merchant/components/*.tsx` — Imports migrados para StoreContext
 
 *Atualizar este arquivo após cada sprint com novas decisões e alterações.*
+
+### 📦 Sprint 8.0 — Gestão de Pedidos, DC-e PDF & Auditoria Financeira (2026-05-06)
+
+**Objetivo:** Implementar o módulo de Gestão de Pedidos para lojistas (incluindo geração de DC-e em PDF) e a Central de Auditoria Financeira para o SuperAdmin, com Central de Disputas/Chat e governança Np1.
+
+- [x] **Central de Pedidos (MerchantOrders.tsx):** Nova aba "Pedidos" no Merchant Hub. Query TanStack com JOIN (`profiles` + `order_items`). Cards de pedido com dados do comprador, itens, total e status badge colorido. Handlers de status com loader inline, `toast.success` e invalidação de query via TanStack (zero refresh).
+- [x] **Handlers de Status:** Botão "Preparar" (`status → 'preparing'`) e "Pronto para Coleta" (`status → 'searching_courier'`) com `useMutation`, loader no botão durante transação e feedback visual imediato.
+- [x] **DC-e PDF (Declaração de Conteúdo):** Botão "Gerar DC-e" em pedidos pagos. PDF gerado via `jsPDF` + `jspdf-autotable` contendo: dados do remetente (loja), destinatário (comprador), lista de itens com quantidades e preços, totais e rodapé legal brasileiro (Convênio S/Nº de 1970).
+- [x] **Hub de Auditoria Financeira (FinancialAudit.tsx):** Nova aba "Pagamentos" no módulo Admin (SuperAdmin). Lista pedidos `payment_status = 'paid'` com badge `payout_released`. Cards KPI: GTV Pago, Repassados, Pendentes. Tabela com colunas: Pedido, Loja, Valor, Taxa, Repasse, Data, Ações.
+- [x] **Botão "Forçar Repasse":** ConfirmDialog glassmorphism de segurança. Chamada à Edge Function `release-payout` passando `order_id`. Se retorno 200, marca visualmente como "Repassado" e grava log em `app_logs`.
+- [x] **Central de Disputas (OrderDisputeLogs.tsx):** Modal ScrollArea carregando mensagens da tabela `order_messages` filtradas por `order_id`. Exibição em formato de chat com bolhas coloridas por role (Comprador, Vendedor, Suporte, Sistema).
+- [x] **Order Repository (Np1 Desacoplamento):** `orderRepository.ts` dedicado com isolamento multi-tenant. Usa `supabase` (RLS) para merchant e `supabaseAdmin` (bypass RLS) para auditoria. Métodos: `getOrders`, `updateOrderStatus`, `getOrderMessages`, `getAuditOrders`, `forceReleasePayout`, `getStoreInfo`.
+- [x] **Zero CLS:** `OrderCardSkeleton` (cards de pedido, minHeight: 220px) e `OrderTableSkeleton` (tabela de auditoria com 3 KPI cards + 7 colunas) adicionados ao `Skeleton.tsx`.
+- [x] **Audit Log:** Ações de mudança de status e geração de DC-e registradas em `app_logs` com `store_id`, `entity` e detalhes da operação.
+- [x] **Types Expandidos:** `Order` com `payment_status`, `payout_released`, `platform_fee`, `searching_courier`, buyer joined fields. Nova interface `OrderMessage` para chat de disputas.
+
+**Arquivos criados:**
+- `src/repositories/orderRepository.ts` — Repositório dedicado de pedidos
+- `src/modules/merchant/components/MerchantOrders.tsx` — Central de Pedidos do Lojista
+- `src/modules/admin/components/FinancialAudit.tsx` — Hub de Auditoria Financeira
+- `src/modules/admin/components/OrderDisputeLogs.tsx` — Central de Disputas/Chat
+
+**Arquivos modificados:**
+- `src/shared/types.ts` — `Order` expandida + `OrderMessage` interface
+- `src/components/Skeleton.tsx` — `OrderCardSkeleton` + `OrderTableSkeleton`
+- `src/modules/merchant/pages/MerchantHubPage.tsx` — Tab "Pedidos" adicionada
+- `src/modules/admin/pages/AdminPage.tsx` — Tab "Pagamentos" adicionada
+- `CONTEXT.md` — Sprint 8.0 documentada
+

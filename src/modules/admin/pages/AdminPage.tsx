@@ -6,11 +6,12 @@ import { UserManagement } from '@/modules/admin/components/UserManagement'
 import { GlobalModeration } from '@/modules/admin/components/GlobalModeration'
 import { MarketplaceSettings } from '@/modules/admin/components/MarketplaceSettings'
 import { AdminBroadcast } from '@/modules/admin/components/AdminBroadcast'
+import { FinancialAudit } from '@/modules/admin/components/FinancialAudit'
 import { useAuth } from '@/modules/auth/hooks/useAuth'
-import { Users, Shield, Settings, Radio } from 'lucide-react'
+import { Users, Shield, Settings, Radio, Wallet } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-type AdminTab = 'users' | 'moderation' | 'settings' | 'broadcast'
+type AdminTab = 'users' | 'moderation' | 'settings' | 'broadcast' | 'payments'
 
 export default function AdminPage() {
   const { hasRole } = useAuth()
@@ -24,6 +25,7 @@ export default function AdminPage() {
     { key: 'moderation' as const, label: 'Moderação', icon: Shield, minRole: 'Support' as const },
     { key: 'settings' as const, label: 'Configurações', icon: Settings, minRole: 'Super User' as const },
     { key: 'broadcast' as const, label: 'Comunicação', icon: Radio, minRole: 'Super User' as const },
+    { key: 'payments' as const, label: 'Pagamentos', icon: Wallet, minRole: 'Super User' as const },
   ].filter(t => hasRole(t.minRole))
 
   return (
@@ -50,6 +52,7 @@ export default function AdminPage() {
         {activeTab === 'moderation' && <div className="animate-fade-in"><GlobalModeration /></div>}
         {activeTab === 'settings' && <div className="animate-fade-in"><MarketplaceSettings /></div>}
         {activeTab === 'broadcast' && <div className="animate-fade-in"><AdminBroadcast /></div>}
+        {activeTab === 'payments' && <div className="animate-fade-in"><FinancialAudit /></div>}
       </div>
     </div>
   )

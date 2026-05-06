@@ -14,11 +14,12 @@ import { MerchantInventory } from '@/modules/merchant/components/MerchantInvento
 import { AdsManager } from '@/modules/merchant/components/AdsManager'
 import { MerchantSupport } from '@/modules/merchant/components/MerchantSupport'
 import { MerchantReports } from '@/modules/merchant/components/MerchantReports'
+import { MerchantOrders } from '@/modules/merchant/components/MerchantOrders'
 import { merchantRepository } from '@/repositories/merchantRepository'
-import { Store, LayoutDashboard, Package, Megaphone, MessageCircleQuestion, FileText, ChevronDown } from 'lucide-react'
+import { Store, LayoutDashboard, Package, Megaphone, MessageCircleQuestion, FileText, ChevronDown, ShoppingBag } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-type Tab = 'dashboard' | 'inventory' | 'marketing' | 'support' | 'reports'
+type Tab = 'dashboard' | 'orders' | 'inventory' | 'marketing' | 'support' | 'reports'
 
 export default function MerchantHubPage() {
   const { storeId, storeName, isOwner, stores, setActiveStore } = useStoreContext()
@@ -89,6 +90,16 @@ export default function MerchantHubPage() {
             <span className="hidden sm:inline">Dashboard</span>
           </button>
           <button
+            onClick={() => handleTabChange('orders')}
+            className={cn(
+              'flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all',
+              activeTab === 'orders' ? 'bg-surface-800 text-white shadow-sm' : 'text-surface-400 hover:text-white'
+            )}
+          >
+            <ShoppingBag className="h-4 w-4" />
+            <span className="hidden sm:inline">Pedidos</span>
+          </button>
+          <button
             onClick={() => handleTabChange('inventory')}
             className={cn(
               'flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all',
@@ -151,6 +162,12 @@ export default function MerchantHubPage() {
 
             {/* Moderation */}
             <ModerationPanel storeId={storeId} />
+          </div>
+        )}
+
+        {activeTab === 'orders' && (
+          <div className="animate-fade-in">
+            <MerchantOrders />
           </div>
         )}
 

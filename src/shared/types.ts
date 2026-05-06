@@ -25,12 +25,30 @@ export interface Order {
   id: string
   user_id: string
   store_id: string
-  status: 'pending' | 'preparing' | 'shipped' | 'delivered' | 'cancelled'
+  status: 'pending' | 'preparing' | 'searching_courier' | 'shipped' | 'delivered' | 'cancelled'
+  payment_status?: 'pending' | 'paid' | 'refunded' | 'failed'
+  payout_released?: boolean
   total_amount: number
   delivery_fee: number
+  platform_fee?: number
   created_at: string
   updated_at: string
-  items: OrderItem[]
+  items?: OrderItem[]
+  // Joined fields
+  buyer_name?: string
+  buyer_email?: string
+  buyer_avatar?: string | null
+  store_name?: string
+}
+
+export interface OrderMessage {
+  id: string
+  order_id: string
+  sender_id: string
+  sender_name: string | null
+  sender_role: 'buyer' | 'seller' | 'support' | 'system'
+  message: string
+  created_at: string
 }
 
 export interface OrderItem {

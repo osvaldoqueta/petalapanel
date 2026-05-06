@@ -221,3 +221,89 @@ export function ReportSkeleton() {
     </div>
   )
 }
+
+/** Skeleton para cards de pedido — Zero CLS para MerchantOrders */
+export function OrderCardSkeleton() {
+  return (
+    <div className="glass rounded-2xl overflow-hidden" style={{ minHeight: '220px' }}>
+      <div className="flex items-center justify-between p-4 border-b border-surface-800/30">
+        <div className="flex items-center gap-3">
+          <Skeleton className="h-9 w-9 rounded-xl" />
+          <div className="space-y-1.5">
+            <Skeleton className="h-4 w-20" />
+            <Skeleton className="h-3 w-16" />
+          </div>
+        </div>
+        <Skeleton className="h-6 w-24 rounded-full" />
+      </div>
+      <div className="p-4 space-y-3">
+        <div className="flex items-center gap-2">
+          <Skeleton className="h-7 w-7 rounded-full" />
+          <div className="space-y-1">
+            <Skeleton className="h-3 w-28" />
+            <Skeleton className="h-2 w-36" />
+          </div>
+        </div>
+        <div className="bg-surface-900/50 rounded-xl p-3 space-y-1.5">
+          <Skeleton className="h-3 w-full" />
+          <Skeleton className="h-3 w-3/4" />
+        </div>
+        <div className="flex items-center justify-between pt-2 border-t border-surface-800/30">
+          <Skeleton className="h-3 w-12" />
+          <Skeleton className="h-5 w-20" />
+        </div>
+      </div>
+      <div className="flex items-center gap-2 p-4 pt-0">
+        <Skeleton className="h-9 flex-1 rounded-xl" />
+        <Skeleton className="h-9 w-28 rounded-xl" />
+      </div>
+    </div>
+  )
+}
+
+/** Skeleton para tabela de auditoria financeira — Zero CLS para FinancialAudit */
+export function OrderTableSkeleton() {
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <div key={i} className="glass rounded-2xl p-5 flex items-center gap-4">
+            <Skeleton className="h-10 w-10 rounded-xl" />
+            <div className="space-y-1.5">
+              <Skeleton className="h-3 w-16" />
+              <Skeleton className="h-6 w-24" />
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="glass rounded-2xl overflow-hidden">
+        <div className="p-4 border-b border-surface-800/50 flex items-center gap-3">
+          <Skeleton className="h-5 w-5 rounded" />
+          <Skeleton className="h-4 w-40" />
+        </div>
+        <table className="w-full">
+          <thead>
+            <tr className="border-b border-surface-800/50">
+              {Array.from({ length: 7 }).map((_, i) => (
+                <th key={i} className="px-4 py-3 text-left"><Skeleton className="h-3 w-16" /></th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {Array.from({ length: 6 }).map((_, i) => (
+              <tr key={i} className="border-b border-surface-800/30">
+                <td className="px-4 py-3"><Skeleton className="h-4 w-16" /></td>
+                <td className="px-4 py-3"><Skeleton className="h-4 w-24" /></td>
+                <td className="px-4 py-3"><Skeleton className="h-4 w-20" /></td>
+                <td className="px-4 py-3"><Skeleton className="h-4 w-16" /></td>
+                <td className="px-4 py-3"><Skeleton className="h-5 w-20 rounded-full" /></td>
+                <td className="px-4 py-3"><Skeleton className="h-3 w-16" /></td>
+                <td className="px-4 py-3"><Skeleton className="h-7 w-28 rounded-lg" /></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
