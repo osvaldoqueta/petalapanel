@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react'
-import { useQuery } from '@tanstack/react-query'
 import { X, AlertTriangle, UploadCloud, Video, Leaf, DollarSign, Weight, Tag, Image as ImageIcon, Sparkles, Clock, Calendar } from 'lucide-react'
 import { merchantRepository } from '@/repositories/merchantRepository'
+import { useCategories, useSubcategories } from '@/repositories/categoryRepository'
 import { supabase } from '@/integrations/supabase/client'
 import type { StoreInventory } from '@/shared/types'
 import { toast } from 'sonner'
@@ -21,12 +21,8 @@ export function ProductFormModal({ storeId, product, isOpen, onClose, onSuccess 
   const [isGenerating, setIsGenerating] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   
-  // ─── Categories ───
-  const { data: categories = [] } = useQuery({
-    queryKey: ['categories'],
-    queryFn: merchantRepository.getCategories,
-    enabled: isOpen
-  })
+  // ─── Categories (1h staleTime via categoryRepository) ───
+  const { data: categories = [] } = useCategories(isOpen)
   
   const [formData, setFormData] = useState({
     name: product?.name || '',
@@ -46,11 +42,7 @@ export function ProductFormModal({ storeId, product, isOpen, onClose, onSuccess 
     video_url: product?.video_url || '',
   })
 
-  const { data: subcategories = [] } = useQuery({
-    queryKey: ['subcategories', formData.category],
-    queryFn: () => merchantRepository.getSubcategories(formData.category),
-    enabled: !!formData.category && isOpen
-  })
+  const { data: subcategories = [] } = useSubcategories(formData.category, !!formData.category && isOpen)
 
   if (!isOpen) return null
 
@@ -85,7 +77,7 @@ export function ProductFormModal({ storeId, product, isOpen, onClose, onSuccess 
     }
   }
 
-  // ─── Gemini IA Copy + Identificar ───
+  // ─── Gemini 2.5 Flash — IA Copy + Identificar ───
   const handleIACopy = async () => {
     if (!formData.image_url) {
       toast.error('Adicione uma foto primeiro para a IA analisar')
@@ -122,7 +114,7 @@ Responda APENAS com um JSON válido, sem markdown, exatamente neste formato:
   "category_id": "O ID da categoria mais adequada desta lista: ${categoriesInfo || 'plantas, flores, acessórios, ferramentas, insumos, sementes, vasos, diversos'}"
 }`
 
-      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -131,13 +123,39 @@ Responda APENAS com um JSON válido, sem markdown, exatamente neste formato:
         })
       })
 
-      if (!res.ok) throw new Error('Falha na API da IA')
+      // Retry on 429
+      if (res.status === 429) {
+        toast.info('Muitas requisições. Tentando novamente em 3s...')
+        await new Promise(r => setTimeout(r, 3000))
+        return handleIACopy()
+      }
+
+      if (!res.ok) throw new Error(`Falha na API da IA (${res.status})`)
       
       const data = await res.json()
       const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || ''
       
-      let cleanText = rawText.replace(/^```json\s*/im, '').replace(/^```\s*/im, '').replace(/\s*```\s*$/im, '').trim()
-      const parsed = JSON.parse(cleanText)
+      // Robust JSON parser with regex fallback
+      let parsed: any
+      try {
+        const cleanText = rawText.replace(/^```json\s*/im, '').replace(/^```\s*/im, '').replace(/\s*```\s*$/im, '').trim()
+        parsed = JSON.parse(cleanText)
+      } catch {
+        // Regex fallback: extract individual fields
+        const extract = (key: string) => {
+          const match = rawText.match(new RegExp(`"${key}"\\s*:\\s*"([^"]*?)"`))
+          return match?.[1] || ''
+        }
+        parsed = {
+          scientific_name: extract('scientific_name'),
+          popular_name: extract('popular_name'),
+          description: extract('description'),
+          category_id: extract('category_id'),
+        }
+        if (!parsed.scientific_name && !parsed.popular_name) {
+          throw new Error('Não foi possível interpretar a resposta da IA')
+        }
+      }
 
       setFormData(prev => ({
         ...prev,

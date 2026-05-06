@@ -18,7 +18,7 @@ export function useAuditLog() {
       return
     }
 
-    const payload: AuditLog = {
+    const payload: Record<string, unknown> = {
       user_id: profile.id,
       action: entry.action,
       table_name: entry.table_name,
@@ -26,6 +26,10 @@ export function useAuditLog() {
       old_value: entry.old_value,
       new_value: entry.new_value,
     }
+
+    // Np1 — Campos opcionais de governança expandida
+    if (entry.entity) payload.entity = entry.entity
+    if (entry.store_id) payload.store_id = entry.store_id
 
     const { error } = await supabaseAdmin
       .from('app_logs')

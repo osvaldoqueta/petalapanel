@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { merchantRepository } from '@/repositories/merchantRepository'
 import { useStoreContext } from '@/modules/merchant/hooks/useStoreContext'
+import { useAuditLog } from '@/hooks/useAuditLog'
 import { TableSkeleton } from '@/components/Skeleton'
 import { ProductFormModal } from '@/modules/merchant/components/ProductFormModal'
 import { Plus, Search, Edit2, AlertTriangle, Clock, CheckCircle, Trash2 } from 'lucide-react'
@@ -76,6 +77,7 @@ function InlineEditInput({
 
 export function MerchantInventory() {
   const { storeId } = useStoreContext()
+  const { log } = useAuditLog()
   const [searchTerm, setSearchTerm] = useState('')
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingProduct, setEditingProduct] = useState<StoreInventory | null>(null)
@@ -170,6 +172,16 @@ export function MerchantInventory() {
     setIsDeleting(true)
     try {
       await merchantRepository.deleteProduct(storeId, productToDelete.id)
+      // Audit log
+      await log({
+        action: 'product_delete',
+        table_name: 'store_inventory',
+        record_key: productToDelete.id,
+        old_value: productToDelete.name,
+        new_value: null,
+        entity: 'store_inventory',
+        store_id: storeId,
+      })
       toast.success('Produto excluído com sucesso')
       refetch()
     } catch (error) {

@@ -108,7 +108,27 @@ export interface AuditLog {
   record_key: string
   old_value: string | null
   new_value: string | null
+  entity?: string
+  store_id?: string
   created_at?: string
+}
+
+export interface ProductQuestion {
+  id: string
+  inventory_id: string
+  store_id: string
+  asker_id: string | null
+  asker_name: string | null
+  question: string
+  answer: string | null
+  answered_at: string | null
+  answerer_name: string | null
+  votes: number
+  is_verified_buyer: boolean
+  created_at: string
+  // Joined fields
+  product_name?: string
+  product_image?: string | null
 }
 
 export interface TopVideo {

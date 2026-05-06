@@ -258,4 +258,29 @@ Durante os testes de produção, descobrimos que a estrutura do Petala App difer
 - [x] **Gemini AI Integration (IA Copy):** Implementação segura (client-side via env vars) da chamada ao modelo Gemini 2.0 Flash. O sistema lê o Base64 da imagem já enviada ao Supabase Storage e gera de forma autônoma: Nome Científico, Nome Popular, Categoria ideal e Descrição de Vendas persuasiva, com injeção direta no formulário do produto (`ProductFormModal.tsx`).
 - [x] **Ação de Exclusão Glassmorphism:** Criação do componente isolado `ConfirmDeleteModal.tsx` com micro-interações, estados de *loading*, e botão "Destructive". Integração do ciclo completo (State -> API -> Invalidação de Cache TanStack) na tabela principal de `MerchantInventory`.
 
+### 🚀 Sprint 4.0 — Central de Comando Completa (2026-05-06)
+
+**Objetivo:** Elevar o Merchant Hub para uma ferramenta de gestão completa, eliminando dependências de código estático, integrando o Gemini 2.5 Flash para automação de metadados, implementando suporte Q&A pelo painel, e refinando governança com audit logs expandidos.
+
+- [x] **Category Repository (Np1 Desacoplamento):** Extração de `getCategories()` e `getSubcategories()` do `merchantRepository.ts` para o repositório dedicado `categoryRepository.ts` com hooks TanStack Query (`useCategories`, `useSubcategories`) e `staleTime: 1 hora`. O formulário de produto agora consome diretamente esses hooks.
+- [x] **Gemini 2.5 Flash Upgrade:** Endpoint do modelo atualizado de `gemini-2.0-flash` para `gemini-2.5-flash`. Adicionado parser JSON robusto com fallback via regex (extrai campos individuais quando JSON completo falha). Retry automático com backoff de 3s em HTTP 429.
+- [x] **Central de Relacionamento (MerchantSupport.tsx):** Módulo completo de Q&A management permitindo ao vendedor visualizar perguntas dos clientes agrupadas por produto, filtrar por status (Pendentes/Respondidas/Todas), responder inline com textarea, e receber notificações em tempo real via Supabase Realtime (`postgres_changes`). Badge de "Nova Pergunta" com contagem live no tab header.
+- [x] **Governança Expandida (Audit Log):** Interface `AuditLog` expandida com campos opcionais `entity` e `store_id`. Hook `useAuditLog` atualizado para aceitar os novos campos mantendo retrocompatibilidade. Logging integrado em: resposta Q&A, exclusão de produtos (individual e em massa).
+- [x] **UI/UX Zero CLS:** `QACardSkeleton` adicionado ao `Skeleton.tsx` com altura fixa para o novo módulo Q&A. `.env.example` atualizado com `VITE_GEMINI_API_KEY`.
+
+**Arquivos criados:**
+- `src/repositories/categoryRepository.ts` — Repositório dedicado de categorias com hooks
+- `src/modules/merchant/components/MerchantSupport.tsx` — Central de Relacionamento Q&A
+
+**Arquivos modificados:**
+- `src/shared/types.ts` — `AuditLog` expandida + `ProductQuestion` interface
+- `src/hooks/useAuditLog.ts` — Suporte a `entity` e `store_id`
+- `src/repositories/merchantRepository.ts` — Removidas categorias, adicionados Q&A methods
+- `src/modules/merchant/components/ProductFormModal.tsx` — categoryRepository + Gemini 2.5 Flash
+- `src/modules/merchant/pages/MerchantHubPage.tsx` — Tab "Suporte" com badge live
+- `src/modules/merchant/components/MerchantInventory.tsx` — Audit log em exclusões
+- `src/components/Skeleton.tsx` — QACardSkeleton
+- `.env.example` — VITE_GEMINI_API_KEY
+
 *Atualizar este arquivo após cada sprint com novas decisões e alterações.*
+

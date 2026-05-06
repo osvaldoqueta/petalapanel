@@ -122,3 +122,27 @@ export function ThemeCardSkeleton() {
     </div>
   )
 }
+
+/** Skeleton para cards de Q&A — Zero CLS para MerchantSupport */
+export function QACardSkeleton() {
+  return (
+    <div className="glass rounded-2xl p-5 space-y-4" style={{ minHeight: '140px' }}>
+      <div className="flex items-start gap-4">
+        <Skeleton className="h-12 w-12 rounded-xl flex-shrink-0" />
+        <div className="flex-1 space-y-2">
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-3 w-24" />
+            <Skeleton className="h-4 w-16 rounded-full" />
+          </div>
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-6 w-6 rounded-full" />
+            <Skeleton className="h-3 w-20" />
+          </div>
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-3/4" />
+        </div>
+      </div>
+    </div>
+  )
+}
+

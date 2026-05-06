@@ -1,5 +1,5 @@
 import { supabase } from '@/integrations/supabase/client'
-import type { StoreInventory, AdCampaign } from '@/shared/types'
+import type { StoreInventory, AdCampaign, ProductQuestion } from '@/shared/types'
 
 export const merchantRepository = {
   // ─── KPIs ────────────────────────────────────────────────────────────────
@@ -217,27 +217,78 @@ export const merchantRepository = {
     }))
   },
 
-  // ─── Categories ────────────────────────────────────────────────────────
-  getCategories: async () => {
-    const { data, error } = await supabase
-      .from('app_categories')
-      .select('*')
-      .order('label', { ascending: true })
-    
+  // ─── Q&A Support ──────────────────────────────────────────────────────────
+  getQuestions: async (storeId: string | null, filter: 'all' | 'pending' | 'answered' = 'all') => {
+    let query = supabase
+      .from('product_questions')
+      .select(`
+        id,
+        inventory_id,
+        store_id,
+        asker_id,
+        asker_name,
+        question,
+        answer,
+        answered_at,
+        answerer_name,
+        votes,
+        is_verified_buyer,
+        created_at,
+        store_inventory!inner(name, image_url)
+      `)
+      .order('created_at', { ascending: false })
+      .limit(100)
+
+    if (storeId) query = query.eq('store_id', storeId)
+
+    if (filter === 'pending') {
+      query = query.is('answer', null)
+    } else if (filter === 'answered') {
+      query = query.not('answer', 'is', null)
+    }
+
+    const { data, error } = await query
     if (error) throw error
-    return data
+
+    return (data || []).map((row: any) => ({
+      ...row,
+      product_name: row.store_inventory?.name || 'Produto',
+      product_image: row.store_inventory?.image_url || null,
+    })) as ProductQuestion[]
   },
 
-  getSubcategories: async (categoryId: string) => {
-    if (!categoryId) return []
+  answerQuestion: async (
+    storeId: string,
+    questionId: string,
+    answer: string,
+    answererName: string
+  ) => {
     const { data, error } = await supabase
-      .from('app_subcategories')
-      .select('*')
-      .eq('category_id', categoryId)
-      .order('label', { ascending: true })
-    
+      .from('product_questions')
+      .update({
+        answer,
+        answered_at: new Date().toISOString(),
+        answerer_name: answererName,
+      })
+      .match({ id: questionId, store_id: storeId })
+      .select()
+      .single()
+
     if (error) throw error
-    return data
+    return data as ProductQuestion
+  },
+
+  getUnansweredCount: async (storeId: string | null) => {
+    let query = supabase
+      .from('product_questions')
+      .select('id', { count: 'exact', head: true })
+      .is('answer', null)
+
+    if (storeId) query = query.eq('store_id', storeId)
+
+    const { count, error } = await query
+    if (error) throw error
+    return count || 0
   },
 
   // ─── Actions ───────────────────────────────────────────────────────────
