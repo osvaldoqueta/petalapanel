@@ -263,19 +263,70 @@ export const merchantRepository = {
     answer: string,
     answererName: string
   ) => {
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('product_questions')
       .update({
         answer,
         answered_at: new Date().toISOString(),
         answerer_name: answererName,
       })
-      .match({ id: questionId, store_id: storeId })
+      .eq('id', questionId)
+      .eq('store_id', storeId) // Security constraint
+
+    if (error) throw error
+  },
+
+  // ─── Merchant Reports ───────────────────────────────────────────────────────
+  getReportSchedule: async (storeId: string) => {
+    const { data, error } = await supabase
+      .from('report_schedules')
+      .select('*')
+      .eq('store_id', storeId)
+      .maybeSingle()
+
+    if (error && error.code !== 'PGRST116') throw error
+    return data
+  },
+
+  upsertReportSchedule: async (
+    storeId: string,
+    schedule: { days_of_week: string[]; time_of_day: string; is_active: boolean }
+  ) => {
+    const { data, error } = await supabase
+      .from('report_schedules')
+      .upsert(
+        {
+          store_id: storeId,
+          days_of_week: schedule.days_of_week,
+          time_of_day: schedule.time_of_day,
+          is_active: schedule.is_active,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'store_id' }
+      )
       .select()
       .single()
 
     if (error) throw error
-    return data as ProductQuestion
+    return data
+  },
+
+  getOrdersForReport: async (storeId: string, date: string) => {
+    // Busca orders do dia específico (yyyy-mm-dd)
+    const startOfDay = new Date(`${date}T00:00:00.000Z`).toISOString()
+    const endOfDay = new Date(`${date}T23:59:59.999Z`).toISOString()
+
+    const { data, error } = await supabase
+      .from('orders')
+      .select('id, total_amount, platform_fee, created_at, status')
+      .eq('store_id', storeId)
+      .eq('payment_status', 'paid')
+      .gte('created_at', startOfDay)
+      .lte('created_at', endOfDay)
+      .order('created_at', { ascending: true })
+
+    if (error) throw error
+    return data || []
   },
 
   getUnansweredCount: async (storeId: string | null) => {

@@ -13,11 +13,12 @@ import { useStoreContext } from '@/modules/merchant/hooks/useStoreContext'
 import { MerchantInventory } from '@/modules/merchant/components/MerchantInventory'
 import { AdsManager } from '@/modules/merchant/components/AdsManager'
 import { MerchantSupport } from '@/modules/merchant/components/MerchantSupport'
+import { MerchantReports } from '@/modules/merchant/components/MerchantReports'
 import { merchantRepository } from '@/repositories/merchantRepository'
-import { Store, LayoutDashboard, Package, Megaphone, MessageCircleQuestion } from 'lucide-react'
+import { Store, LayoutDashboard, Package, Megaphone, MessageCircleQuestion, FileText } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-type Tab = 'dashboard' | 'inventory' | 'marketing' | 'support'
+type Tab = 'dashboard' | 'inventory' | 'marketing' | 'support' | 'reports'
 
 export default function MerchantHubPage() {
   const { storeId, storeName, isOwner } = useStoreContext()
@@ -105,6 +106,16 @@ export default function MerchantHubPage() {
               </span>
             )}
           </button>
+          <button
+            onClick={() => handleTabChange('reports')}
+            className={cn(
+              'flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all',
+              activeTab === 'reports' ? 'bg-surface-800 text-white shadow-sm' : 'text-surface-400 hover:text-white'
+            )}
+          >
+            <FileText className="h-4 w-4" />
+            <span className="hidden sm:inline">Relatórios</span>
+          </button>
         </div>
       </div>
 
@@ -141,6 +152,12 @@ export default function MerchantHubPage() {
         {activeTab === 'support' && (
           <div className="animate-fade-in">
             <MerchantSupport />
+          </div>
+        )}
+
+        {activeTab === 'reports' && (
+          <div className="animate-fade-in">
+            <MerchantReports />
           </div>
         )}
       </div>

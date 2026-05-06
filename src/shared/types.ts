@@ -224,3 +224,15 @@ export interface FinancialMetrics {
   ticketChange: number
 }
 
+// ─── Merchant Reports ───────────────────────────────────────────────────────
+
+export interface ReportSchedule {
+  id: string
+  store_id: string
+  days_of_week: string[]
+  time_of_day: string
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+

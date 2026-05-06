@@ -19,24 +19,40 @@ export function DashboardLayout() {
     const ordersChannel = supabaseAdmin.channel('elite-orders')
       .on(
         'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'orders' },
+        { event: '*', schema: 'public', table: 'orders' },
         (payload) => {
+          if (payload.eventType !== 'INSERT' && payload.eventType !== 'UPDATE') return
+          
           const order = payload.new
-          if (order.total_amount > 1000) {
+          // Apenas dispara alerta se for uma venda >= 1000 e estiver paga (ou recém criada com valor alto)
+          if (order.total_amount >= 1000 && (payload.eventType === 'INSERT' || order.payment_status === 'paid')) {
+            // Se for UPDATE, só alerta se o status mudou para 'paid'
+            if (payload.eventType === 'UPDATE' && payload.old.payment_status === 'paid') return
+
             // Tocar som discreto
             const audio = new Audio(BEEP_SOUND)
             audio.volume = 0.5
             audio.play().catch(() => {})
 
-            toast.success(
-              <div className="flex flex-col gap-1">
-                <span className="font-bold text-emerald-400 flex items-center gap-1">
-                  <DollarSign className="h-4 w-4" /> Venda Alta Detectada!
-                </span>
-                <span className="text-sm text-surface-200">
-                  Um novo pedido de {formatCurrency(order.total_amount)} foi realizado.
-                </span>
-              </div>,
+            toast.custom(
+              (t) => (
+                <div 
+                  onClick={() => toast.dismiss(t)}
+                  className="bg-surface-900 border border-amber-500/50 shadow-[0_0_15px_rgba(245,158,11,0.2)] p-4 rounded-xl flex items-start gap-3 cursor-pointer w-full max-w-sm"
+                >
+                  <div className="bg-amber-500/10 p-2 rounded-lg mt-0.5">
+                    <DollarSign className="h-5 w-5 text-amber-500" />
+                  </div>
+                  <div>
+                    <h4 className="text-amber-500 font-bold text-sm tracking-tight flex items-center gap-2">
+                      Venda Alta Aprovada!
+                    </h4>
+                    <p className="text-surface-300 text-xs mt-1">
+                      Pedido <span className="font-mono text-white/80">#{order.id.split('-')[0]}</span> no valor de <strong className="text-white">{formatCurrency(order.total_amount)}</strong>.
+                    </p>
+                  </div>
+                </div>
+              ),
               { duration: 10000, id: `order-${order.id}` }
             )
           }
