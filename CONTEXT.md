@@ -352,5 +352,26 @@ Durante os testes de produção, descobrimos que a estrutura do Petala App difer
 - `src/components/Skeleton.tsx` — `OrderCardSkeleton` + `OrderTableSkeleton`
 - `src/modules/merchant/pages/MerchantHubPage.tsx` — Tab "Pedidos" adicionada
 - `src/modules/admin/pages/AdminPage.tsx` — Tab "Pagamentos" adicionada
-- `CONTEXT.md` — Sprint 8.0 documentada
 
+### 🧩 Sprint 9.0 — Migração Completa dos Módulos Administrativos (2026-05-08)
+
+**Objetivo:** Completar a migração arquitetural dos módulos operacionais primários (`Plants`, `Affiliates`, `Installs`, `Staff`, `Publicidade`, e `Admin/Sales`) do aplicativo nativo `petalapp` para o dashboard autônomo `petalapanel`, unificando as operações administrativas.
+
+- [x] **Repositório Desacoplado:** Módulos portados consumindo o cliente `supabaseAdmin` para ações sensíveis de super usuário via Service Role (ex: atualizar roles de Staff via `updateUserRole`).
+- [x] **Módulos Migrados:** `PlantsManagement`, `AdminAffiliateProducts`, `InstallsManagement` (Heartbeat), `AdminStaffPanel`, `AdminAdvertisingPanel` (Publicidade Ads v2) e `AdminSales` (Configurações de Venda).
+- [x] **Adequação UI/UX:** Integração das novas telas como *Tabs* horizontais dentro do `AdminPage.tsx` utilizando a interface `glassmorphism`, `lucide-react` e garantindo renderização assíncrona (startTransition) e proteção RBAC rigorosa.
+- [x] **Limpeza do App Nativo:** Extirpação completa das importações, arquivos (`AdminSales.tsx`, `AdminAffiliateProducts.tsx`, etc) e blocos de renderização do `Admin.tsx` original do `petalapp`, aliviando significativamente o peso do build do app nativo.
+- [x] **Mocks Shadcn Isolados:** Criação de componentes UI dummy (`button`, `card`, `input`, `select`, `switch`, `checkbox`) dentro do diretório do painel para viabilizar o copy/paste de telas com milhares de linhas (como `AdminAdvertisingPanel`) preservando a consistência estilística do projeto sem precisar reconstruir o markup.
+
+**Arquivos criados em `petalapanel`:**
+- `src/repositories/affiliateRepository.ts`
+- `src/modules/admin/components/PlantsManagement.tsx`
+- `src/modules/admin/components/InstallsManagement.tsx`
+- `src/modules/admin/components/AdminAffiliateProducts.tsx`
+- `src/modules/admin/components/AdminStaffPanel.tsx`
+- `src/modules/admin/components/AdminAdvertisingPanel.tsx`
+- `src/modules/admin/components/AdminSales.tsx`
+
+**Limpeza em `petalapp`:**
+- Removidos 4 arquivos inteiros de componentes da pasta `/src/components` e `/src/pages`.
+- `Admin.tsx` limpo das seções `plants`, `affiliates`, `heartbeat`, `staff`, `advertising`.
